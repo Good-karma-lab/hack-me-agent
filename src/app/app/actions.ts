@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOrganizationAccess } from "@/lib/auth/session";
+import { runTicketCopilot } from "@/lib/opencode/service";
 import {
   addIntegration,
   addKnowledgeDocument,
@@ -79,4 +80,20 @@ export async function addIntegrationAction(formData: FormData) {
   });
 
   revalidatePath(`/app/${orgSlug}/settings`);
+}
+
+export async function runTicketCopilotAction(formData: FormData) {
+  const orgSlug = requiredString(formData, "orgSlug");
+  const ticketId = requiredString(formData, "ticketId");
+  const { organization } = await requireOrganizationAccess(orgSlug);
+
+  await runTicketCopilot({
+    organizationId: organization.id,
+    ticketId,
+  });
+
+  revalidatePath(`/app/${orgSlug}/inbox/${ticketId}`);
+  revalidatePath(`/app/${orgSlug}/runs`);
+  revalidatePath(`/app/${orgSlug}/approvals`);
+  redirect(`/app/${orgSlug}/inbox/${ticketId}`);
 }

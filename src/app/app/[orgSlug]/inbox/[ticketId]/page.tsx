@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2, Clock3, Command, LifeBuoy } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
-import { addTicketReplyAction } from "@/app/app/actions";
+import { addTicketReplyAction, runTicketCopilotAction } from "@/app/app/actions";
 import { requireOrganizationAccess } from "@/lib/auth/session";
 import { getTicketDetail, listTicketsForOrganization } from "@/lib/support/queries";
 import { cn } from "@/lib/utils";
@@ -69,9 +69,18 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
           title={ticket.title}
           description={`${ticket.company} • ${ticket.requesterName} • ${ticket.sentiment}`}
           action={
-            <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-200">
-              <CheckCircle2 className="h-4 w-4" />
-              {runs[0] ? "AI run available" : "No run yet"}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-200">
+                <CheckCircle2 className="h-4 w-4" />
+                {runs[0] ? "AI run available" : "No run yet"}
+              </div>
+              <form action={runTicketCopilotAction}>
+                <input type="hidden" name="orgSlug" value={orgSlug} />
+                <input type="hidden" name="ticketId" value={ticket.id} />
+                <button className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
+                  Run copilot
+                </button>
+              </form>
             </div>
           }
         />

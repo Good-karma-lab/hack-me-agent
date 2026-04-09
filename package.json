@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
+    "@modelcontextprotocol/server-everything": "^2026.1.26",
+    "@opencode-ai/sdk": "^1.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.8.0",
     "next": "16.2.3",

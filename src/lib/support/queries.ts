@@ -148,3 +148,97 @@ export async function addIntegration(input: {
     createdAt: new Date(),
   });
 }
+
+export async function createAgentRunRecord(input: {
+  organizationId: string;
+  ticketId: string;
+  provider: string;
+  model: string;
+  summary: string;
+}) {
+  await ensureDatabase();
+  const id = createId("run");
+  const now = new Date();
+
+  await db.insert(agentRuns).values({
+    id,
+    organizationId: input.organizationId,
+    ticketId: input.ticketId,
+    provider: input.provider,
+    model: input.model,
+    status: "running",
+    summary: input.summary,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return id;
+}
+
+export async function updateAgentRunRecord(input: {
+  runId: string;
+  status: string;
+  summary: string;
+}) {
+  await ensureDatabase();
+  await db.update(agentRuns).set({ status: input.status, summary: input.summary, updatedAt: new Date() }).where(eq(agentRuns.id, input.runId));
+}
+
+export async function appendAgentRunEvent(input: {
+  runId: string;
+  eventType: string;
+  detail: string;
+}) {
+  await ensureDatabase();
+  await db.insert(agentRunEvents).values({
+    id: createId("evt"),
+    runId: input.runId,
+    eventType: input.eventType,
+    detail: input.detail,
+    createdAt: new Date(),
+  });
+}
+
+export async function addCopilotMessage(input: {
+  ticketId: string;
+  body: string;
+}) {
+  await ensureDatabase();
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    await tx.insert(ticketMessages).values({
+      id: createId("msg"),
+      ticketId: input.ticketId,
+      authorName: "SignalDesk Agent",
+      authorRole: "Copilot",
+      body: input.body,
+      createdAt: now,
+    });
+
+    await tx.update(tickets).set({ updatedAt: now }).where(eq(tickets.id, input.ticketId));
+  });
+}
+
+export async function createApprovalRequest(input: {
+  organizationId: string;
+  ticketId: string;
+  title: string;
+  description: string;
+  createdBy: string;
+}) {
+  await ensureDatabase();
+  const now = new Date();
+
+  await db.insert(approvalRequests).values({
+    id: createId("apr"),
+    organizationId: input.organizationId,
+    ticketId: input.ticketId,
+    title: input.title,
+    description: input.description,
+    status: "pending",
+    createdBy: input.createdBy,
+    createdAt: now,
+    updatedAt: now,
+  });
+}

@@ -303,6 +303,18 @@ async function seedOrganizationData(
       config: JSON.stringify({ channels: ["#support-escalations"] }),
       createdAt: now,
     },
+    {
+      id: createId("int"),
+      organizationId,
+      provider: "mcp-local",
+      label: "sandbox_everything",
+      status: "active",
+      config: JSON.stringify({
+        type: "local",
+        command: ["bun", "x", "mcp-server-everything"],
+      }),
+      createdAt: now,
+    },
   ]);
 }
 
