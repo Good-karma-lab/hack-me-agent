@@ -24,7 +24,7 @@ export default async function ApprovalsPage({ params }: ApprovalsPageProps) {
           <article key={approval.id} className="rounded-[24px] border border-white/10 bg-white/5 p-5">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-lg font-medium text-white">{approval.title}</h3>
-              <span className="rounded-full bg-amber-300/12 px-3 py-1 text-xs text-amber-100">{approval.status}</span>
+              <span data-testid={`approval-status-${approval.id}`} className="rounded-full bg-amber-300/12 px-3 py-1 text-xs text-amber-100">{approval.status}</span>
             </div>
             <p className="mt-3 text-sm leading-7 text-slate-300">{approval.description}</p>
             {approval.status === "pending" ? (
