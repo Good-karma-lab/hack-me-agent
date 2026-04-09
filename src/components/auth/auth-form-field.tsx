@@ -18,6 +18,7 @@ export function AuthFormField({
       <span className="text-sm font-medium text-slate-200">{label}</span>
       <input
         required
+        data-testid={`field-${name}`}
         name={name}
         type={type}
         placeholder={placeholder}

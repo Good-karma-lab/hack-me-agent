@@ -43,6 +43,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         />
         <button
           type="submit"
+          data-testid="login-submit"
           className="w-full rounded-[18px] bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:bg-cyan-50"
         >
           Sign in

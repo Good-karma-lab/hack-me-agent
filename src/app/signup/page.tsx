@@ -55,6 +55,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         />
         <button
           type="submit"
+          data-testid="signup-submit"
           className="w-full rounded-[18px] bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:bg-cyan-50"
         >
           Create workspace

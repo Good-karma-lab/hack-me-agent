@@ -37,10 +37,10 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           <input type="hidden" name="orgSlug" value={orgSlug} />
           <h3 className="text-lg font-medium text-white">Add integration</h3>
           <div className="mt-4 space-y-3">
-            <input name="provider" required placeholder="Provider: stripe, slack, jira" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <input name="label" required placeholder="Display label" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <textarea name="config" required rows={7} placeholder='JSON or notes, for example {"scope":"billing:read"}' className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <button className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">Save integration</button>
+            <input data-testid="integration-provider" name="provider" required placeholder="Provider: stripe, slack, jira" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <input data-testid="integration-label" name="label" required placeholder="Display label" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <textarea data-testid="integration-config" name="config" required rows={7} placeholder='JSON or notes, for example {"scope":"billing:read"}' className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <button data-testid="integration-submit" className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">Save integration</button>
           </div>
         </form>
       </div>

@@ -36,10 +36,10 @@ export default async function KnowledgePage({ params }: KnowledgePageProps) {
           <input type="hidden" name="orgSlug" value={orgSlug} />
           <h3 className="text-lg font-medium text-white">Add document</h3>
           <div className="mt-4 space-y-3">
-            <input name="title" required placeholder="Title" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <input name="source" required placeholder="Source: policy, incident, macro" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <textarea name="body" required rows={8} placeholder="Document body" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
-            <button className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">Save document</button>
+            <input data-testid="knowledge-title" name="title" required placeholder="Title" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <input data-testid="knowledge-source" name="source" required placeholder="Source: policy, incident, macro" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <textarea data-testid="knowledge-body" name="body" required rows={8} placeholder="Document body" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+            <button data-testid="knowledge-submit" className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">Save document</button>
           </div>
         </form>
       </div>

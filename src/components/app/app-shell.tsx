@@ -70,6 +70,7 @@ export function AppShell({ session, organization, currentPath, children }: AppSh
                   <Link
                     key={label}
                     href={target}
+                    data-testid={`nav-${href}`}
                     className={cn(
                       "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition",
                       isActive

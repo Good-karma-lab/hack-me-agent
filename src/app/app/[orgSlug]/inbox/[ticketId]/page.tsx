@@ -38,6 +38,7 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
             <Link
               key={item.id}
               href={`/app/${orgSlug}/inbox/${item.id}`}
+              data-testid={`ticket-link-${item.id}`}
               className={cn(
                 "block rounded-[24px] border p-4 transition",
                 item.id === ticket.id ? "border-cyan-300/30 bg-cyan-300/10" : "border-white/10 bg-white/5 hover:bg-white/[0.07]",
@@ -78,6 +79,7 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
                 <input type="hidden" name="orgSlug" value={orgSlug} />
                 <input type="hidden" name="ticketId" value={ticket.id} />
                 <button className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
+                  <span data-testid="run-copilot-label">Run copilot</span>
                   Run copilot
                 </button>
               </form>
@@ -118,12 +120,13 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
             <input type="hidden" name="ticketId" value={ticket.id} />
             <textarea
               required
+              data-testid="reply-body"
               name="body"
               rows={5}
               placeholder="Draft a grounded support response or internal note"
               className="w-full rounded-[20px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
             />
-            <button className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
+            <button data-testid="reply-submit" className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
               Add reply
             </button>
           </form>

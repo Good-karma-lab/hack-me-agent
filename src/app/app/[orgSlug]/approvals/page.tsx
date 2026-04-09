@@ -33,13 +33,13 @@ export default async function ApprovalsPage({ params }: ApprovalsPageProps) {
                   <input type="hidden" name="orgSlug" value={orgSlug} />
                   <input type="hidden" name="approvalId" value={approval.id} />
                   <input type="hidden" name="status" value="approved" />
-                  <button className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950">Approve</button>
+                  <button data-testid={`approve-${approval.id}`} className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950">Approve</button>
                 </form>
                 <form action={updateApprovalStatusAction}>
                   <input type="hidden" name="orgSlug" value={orgSlug} />
                   <input type="hidden" name="approvalId" value={approval.id} />
                   <input type="hidden" name="status" value="denied" />
-                  <button className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white">Deny</button>
+                  <button data-testid={`deny-${approval.id}`} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white">Deny</button>
                 </form>
               </div>
             ) : null}
