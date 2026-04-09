@@ -40,7 +40,7 @@ export function AppShell({ session, organization, currentPath, children }: AppSh
               <Bell className="h-5 w-5" />
             </button>
             <form action={logoutAction}>
-              <button className="rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
+              <button data-testid="logout-submit" className="rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">
                 Sign out
               </button>
             </form>

@@ -179,9 +179,20 @@ export async function updateAgentRunRecord(input: {
   runId: string;
   status: string;
   summary: string;
+  provider?: string;
+  model?: string;
 }) {
   await ensureDatabase();
-  await db.update(agentRuns).set({ status: input.status, summary: input.summary, updatedAt: new Date() }).where(eq(agentRuns.id, input.runId));
+  await db
+    .update(agentRuns)
+    .set({
+      status: input.status,
+      summary: input.summary,
+      provider: input.provider,
+      model: input.model,
+      updatedAt: new Date(),
+    })
+    .where(eq(agentRuns.id, input.runId));
 }
 
 export async function appendAgentRunEvent(input: {

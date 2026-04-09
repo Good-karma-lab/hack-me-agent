@@ -45,12 +45,16 @@ type StructuredRunResult = {
   needsApproval: boolean;
   approvalTitle?: string;
   approvalReason?: string;
+  usedMcpTools?: string[];
 };
 
-const DEFAULT_MODEL = process.env.OPENCODE_MODEL;
+const OPENCODE_MODEL = process.env.OPENCODE_MODEL;
 
 const globalState = globalThis as typeof globalThis & {
-  signalDeskOpencode?: Promise<Awaited<ReturnType<typeof createOpencode>>>;
+  signalDeskOpencode?: {
+    signature: string;
+    instance: Promise<Awaited<ReturnType<typeof createOpencode>>>;
+  };
 };
 
 function parseModel(model: string | undefined) {
@@ -70,7 +74,7 @@ function parseModel(model: string | undefined) {
 function buildMcpConfig(integrations: Awaited<ReturnType<typeof listIntegrations>>): OpencodeConfig["mcp"] {
   const entries: Array<[string, LocalMcpConfig | RemoteMcpConfig]> = [];
 
-  for (const integration of integrations) {
+  for (const integration of integrations.filter((item) => item.status === "active")) {
     try {
       const parsed = JSON.parse(integration.config) as Record<string, unknown>;
       if (parsed.type === "local" && Array.isArray(parsed.command)) {
@@ -106,21 +110,31 @@ function buildMcpConfig(integrations: Awaited<ReturnType<typeof listIntegrations
 }
 
 async function getOpencodeForIntegrations(integrations: Awaited<ReturnType<typeof listIntegrations>>) {
-  if (!globalState.signalDeskOpencode) {
-    const config: OpencodeConfig = {
-      model: DEFAULT_MODEL,
-      mcp: buildMcpConfig(integrations),
-      tools: {},
-      instructions: ["AGENTS.md"],
-    };
+  const config: OpencodeConfig = {
+    model: OPENCODE_MODEL,
+    mcp: buildMcpConfig(integrations),
+    tools: {},
+    instructions: ["AGENTS.md"],
+  };
 
-    globalState.signalDeskOpencode = createOpencode({
-      port: 4096,
-      config,
-    });
+  const signature = JSON.stringify(config);
+
+  if (!globalState.signalDeskOpencode || globalState.signalDeskOpencode.signature !== signature) {
+    const previous = globalState.signalDeskOpencode;
+    if (previous) {
+      void previous.instance.then((instance) => instance.server.close()).catch(() => undefined);
+    }
+
+    globalState.signalDeskOpencode = {
+      signature,
+      instance: createOpencode({
+        port: 0,
+        config,
+      }),
+    };
   }
 
-  return globalState.signalDeskOpencode;
+  return globalState.signalDeskOpencode.instance;
 }
 
 async function createSession(serverUrl: string, title: string) {
@@ -133,7 +147,8 @@ async function createSession(serverUrl: string, title: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`Unable to create OpenCode session (${response.status}).`);
+    const body = await response.text();
+    throw new Error(`Unable to create OpenCode session (${response.status}): ${body}`);
   }
 
   return (await response.json()) as { id: string };
@@ -153,12 +168,15 @@ async function promptSession(
   });
 
   if (!response.ok) {
-    throw new Error(`OpenCode prompt failed (${response.status}).`);
+    const body = await response.text();
+    throw new Error(`OpenCode prompt failed (${response.status}): ${body}`);
   }
 
   return (await response.json()) as {
     info: {
       structured?: unknown;
+      providerID?: string;
+      modelID?: string;
     };
   };
 }
@@ -175,12 +193,12 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
     throw new Error("Ticket not found.");
   }
 
-  const parsedModel = parseModel(DEFAULT_MODEL);
+  const parsedModel = parseModel(OPENCODE_MODEL);
   const runId = await createAgentRunRecord({
     organizationId: input.organizationId,
     ticketId: input.ticketId,
-    provider: parsedModel?.providerID ?? "configured-default",
-    model: parsedModel?.modelID ?? "configured-default",
+    provider: parsedModel?.providerID ?? "pending",
+    model: parsedModel?.modelID ?? "pending",
     summary: "Starting OpenCode support analysis.",
   });
 
@@ -204,7 +222,8 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
       `Knowledge documents:\n${documents.map((document) => `- ${document.title} [${document.source}]: ${document.body}`).join("\n")}`,
       `Existing approvals:\n${approvals.map((approval) => `- ${approval.title}: ${approval.status}`).join("\n") || "None"}`,
       `Available integrations:\n${integrations.map((integration) => `- ${integration.label} (${integration.provider})`).join("\n") || "None"}`,
-      "If an MCP server is relevant and available, use it. Prefer tenant-scoped sources. Do not invent external facts.",
+      "If a relevant MCP server is available, use it explicitly and report which MCP tools you used.",
+      "Prefer tenant-scoped sources. Do not invent external facts.",
     ].join("\n\n");
 
     await promptSession(opencode.server.url, session.id, {
@@ -234,6 +253,10 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
             needsApproval: { type: "boolean" },
             approvalTitle: { type: "string" },
             approvalReason: { type: "string" },
+            usedMcpTools: {
+              type: "array",
+              items: { type: "string" },
+            },
           },
           required: ["summary", "customerReply", "internalNote", "needsApproval"],
         },
@@ -257,6 +280,14 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
       eventType: "response.generated",
       detail: structured.summary,
     });
+
+    if (structured.usedMcpTools?.length) {
+      await appendAgentRunEvent({
+        runId,
+        eventType: "mcp.tools.used",
+        detail: structured.usedMcpTools.join(", "),
+      });
+    }
 
     await addCopilotMessage({
       ticketId: input.ticketId,
@@ -283,6 +314,8 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
       runId,
       status: "completed",
       summary: structured.summary,
+      provider: response.info.providerID,
+      model: response.info.modelID,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown OpenCode failure.";

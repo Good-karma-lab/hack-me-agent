@@ -146,7 +146,7 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
             </div>
             <div>
               <p className="text-sm font-medium text-white">Model</p>
-              <p className="text-xs text-slate-400">{runs[0] ? `${runs[0].provider}/${runs[0].model}` : "pending"}</p>
+              <p data-testid="run-model" className="text-xs text-slate-400">{runs[0] ? `${runs[0].provider}/${runs[0].model}` : "pending"}</p>
             </div>
           </div>
         </div>

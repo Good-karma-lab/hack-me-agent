@@ -20,13 +20,13 @@ export default async function RunsPage({ params }: RunsPageProps) {
       />
       <div className="mt-6 space-y-4">
         {runs.map((run) => (
-          <article key={run.id} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+          <article key={run.id} data-testid={`run-card-${run.id}`} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-medium text-white">{run.id}</h3>
                 <p className="mt-1 text-sm text-slate-400">{run.provider}/{run.model}</p>
               </div>
-              <span className="rounded-full bg-white/8 px-3 py-1 text-xs text-slate-200">{run.status}</span>
+              <span data-testid={`run-status-${run.id}`} className="rounded-full bg-white/8 px-3 py-1 text-xs text-slate-200">{run.status}</span>
             </div>
             <p className="mt-3 text-sm leading-7 text-slate-300">{run.summary}</p>
           </article>

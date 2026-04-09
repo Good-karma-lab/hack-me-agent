@@ -42,7 +42,39 @@ test("customer support tenant flow works end-to-end", async ({ page }) => {
 
   await page.getByRole("button", { name: "Run copilot" }).click();
   await expect(page.getByText("SignalDesk Agent")).toBeVisible();
+  await expect(page.getByTestId("run-model")).not.toHaveText("pending");
 
   await page.getByTestId("nav-runs").click();
   await expect(page.getByText("completed").first()).toBeVisible();
+});
+
+test("auth redirects and login persistence work with the real database", async ({ page }) => {
+  await page.goto("/login");
+
+  await page.getByTestId("field-email").fill("owner@playwright-support.test");
+  await page.getByTestId("field-password").fill("Sup3rSecretPass!");
+  await page.getByTestId("login-submit").click();
+
+  await expect(page).toHaveURL(/\/app\/playwright-support\/inbox(?:\/.+)?/);
+
+  await page.getByTestId("logout-submit").click();
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto("/app");
+  await expect(page).toHaveURL(/\/login/);
+});
+
+test("re-running the copilot creates another real OpenCode run", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByTestId("field-email").fill("owner@playwright-support.test");
+  await page.getByTestId("field-password").fill("Sup3rSecretPass!");
+  await page.getByTestId("login-submit").click();
+
+  await page.getByTestId("nav-inbox").click();
+  await page.locator('[data-testid^="ticket-link-"]').nth(1).click();
+  await page.getByRole("button", { name: "Run copilot" }).click();
+
+  await expect(page.getByText("SignalDesk Agent")).toBeVisible();
+  await page.getByTestId("nav-runs").click();
+  await expect(page.locator('[data-testid^="run-card-"]')).toHaveCount(3);
 });
