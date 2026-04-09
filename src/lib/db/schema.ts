@@ -55,6 +55,85 @@ export const inboxes = sqliteTable("inboxes", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const tickets = sqliteTable("tickets", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  inboxId: text("inbox_id").references(() => inboxes.id, { onDelete: "set null" }),
+  externalId: text("external_id"),
+  company: text("company").notNull(),
+  requesterName: text("requester_name").notNull(),
+  requesterEmail: text("requester_email").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  priority: text("priority").notNull(),
+  sentiment: text("sentiment").notNull(),
+  channel: text("channel").notNull(),
+  status: text("status").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const ticketMessages = sqliteTable("ticket_messages", {
+  id: text("id").primaryKey(),
+  ticketId: text("ticket_id").notNull().references(() => tickets.id, { onDelete: "cascade" }),
+  authorName: text("author_name").notNull(),
+  authorRole: text("author_role").notNull(),
+  body: text("body").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const knowledgeDocuments = sqliteTable("knowledge_documents", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  source: text("source").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const approvalRequests = sqliteTable("approval_requests", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  ticketId: text("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const integrations = sqliteTable("integrations", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  label: text("label").notNull(),
+  status: text("status").notNull(),
+  config: text("config").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const agentRuns = sqliteTable("agent_runs", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  ticketId: text("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
+  status: text("status").notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  summary: text("summary").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const agentRunEvents = sqliteTable("agent_run_events", {
+  id: text("id").primaryKey(),
+  runId: text("run_id").notNull().references(() => agentRuns.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  detail: text("detail").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   memberships: many(memberships),
   sessions: many(sessions),
@@ -96,6 +175,13 @@ export const schema = {
   memberships,
   sessions,
   inboxes,
+  tickets,
+  ticketMessages,
+  knowledgeDocuments,
+  approvalRequests,
+  integrations,
+  agentRuns,
+  agentRunEvents,
 };
 
 export type User = typeof users.$inferSelect;

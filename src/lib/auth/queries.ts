@@ -1,6 +1,18 @@
 import { and, eq, like } from "drizzle-orm";
 import { db, ensureDatabase } from "@/lib/db";
-import { inboxes, memberships, organizations, users } from "@/lib/db/schema";
+import {
+  agentRunEvents,
+  agentRuns,
+  approvalRequests,
+  inboxes,
+  integrations,
+  knowledgeDocuments,
+  memberships,
+  organizations,
+  ticketMessages,
+  tickets,
+  users,
+} from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "./password";
 import { slugify } from "@/lib/utils";
 
@@ -84,12 +96,214 @@ export async function createUserWithOrganization(input: {
       channel: "email",
       createdAt: now,
     });
+
+    await seedOrganizationData(tx, organizationId, inboxId, now);
   });
 
   return {
     userId,
     organizationSlug: slug,
   };
+}
+
+async function seedOrganizationData(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  organizationId: string,
+  inboxId: string,
+  now: Date,
+) {
+  const ticketSeed = [
+    {
+      id: createId("tkt"),
+      externalId: "T-2048",
+      company: "Northstar Cloud",
+      requesterName: "Amelia Hart",
+      requesterEmail: "amelia@northstarcloud.com",
+      title: "Duplicate charge after annual plan upgrade",
+      body: "We upgraded to the annual enterprise plan and now see two charges. Please confirm which one will be voided.",
+      priority: "Critical",
+      sentiment: "Frustrated",
+      channel: "Email",
+      status: "open",
+    },
+    {
+      id: createId("tkt"),
+      externalId: "T-2044",
+      company: "PulseLayer",
+      requesterName: "Rohan Shah",
+      requesterEmail: "rohan@pulselayer.io",
+      title: "SSO setup blocked by missing Okta metadata",
+      body: "Our Okta integration fails during verification and says metadata could not be parsed.",
+      priority: "High",
+      sentiment: "Urgent",
+      channel: "Slack Connect",
+      status: "open",
+    },
+    {
+      id: createId("tkt"),
+      externalId: "T-2039",
+      company: "Branchflow",
+      requesterName: "Yana Lopes",
+      requesterEmail: "yana@branchflow.com",
+      title: "Webhook retries stopped after rotating secret",
+      body: "Events stopped replaying after we rotated the webhook secret in the admin panel.",
+      priority: "Medium",
+      sentiment: "Concerned",
+      channel: "Portal",
+      status: "investigating",
+    },
+  ];
+
+  await tx.insert(tickets).values(
+    ticketSeed.map((ticket) => ({
+      ...ticket,
+      organizationId,
+      inboxId,
+      createdAt: now,
+      updatedAt: now,
+    })),
+  );
+
+  await tx.insert(ticketMessages).values([
+    {
+      id: createId("msg"),
+      ticketId: ticketSeed[0].id,
+      authorName: "Amelia Hart",
+      authorRole: "Customer",
+      body: ticketSeed[0].body,
+      createdAt: now,
+    },
+    {
+      id: createId("msg"),
+      ticketId: ticketSeed[0].id,
+      authorName: "SignalDesk Agent",
+      authorRole: "Copilot",
+      body: "I found a matching Stripe event sequence. One payment is pending capture and the upgrade invoice is settled. Refund action requires approval.",
+      createdAt: new Date(now.getTime() + 60_000),
+    },
+    {
+      id: createId("msg"),
+      ticketId: ticketSeed[1].id,
+      authorName: "Rohan Shah",
+      authorRole: "Customer",
+      body: ticketSeed[1].body,
+      createdAt: new Date(now.getTime() + 120_000),
+    },
+  ]);
+
+  await tx.insert(knowledgeDocuments).values([
+    {
+      id: createId("doc"),
+      organizationId,
+      title: "Billing policy v4.2",
+      body: "Enterprise annual plan upgrades can produce one proration invoice and one pending prior invoice capture. Refunds over $250 require owner approval.",
+      source: "policy",
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: createId("doc"),
+      organizationId,
+      title: "SSO troubleshooting guide",
+      body: "When Okta metadata fails verification, confirm ACS URL, entity ID, certificate formatting, and SHA-256 signing settings.",
+      source: "runbook",
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: createId("doc"),
+      organizationId,
+      title: "Webhook incident postmortem",
+      body: "Secret rotation can invalidate retry signatures if the worker pool has stale config. Force a worker refresh after secret updates.",
+      source: "incident",
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  await tx.insert(approvalRequests).values([
+    {
+      id: createId("apr"),
+      organizationId,
+      ticketId: ticketSeed[0].id,
+      title: "Refund pending capture over threshold",
+      description: "If the pending capture settles, refund invoice inv_98234 for the duplicate billing event.",
+      status: "pending",
+      createdBy: "SignalDesk Agent",
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: createId("apr"),
+      organizationId,
+      ticketId: ticketSeed[2].id,
+      title: "Rotate webhook worker credentials",
+      description: "Apply worker credential refresh in EU region after webhook secret rotation.",
+      status: "pending",
+      createdBy: "SignalDesk Agent",
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  const runId = createId("run");
+
+  await tx.insert(agentRuns).values({
+    id: runId,
+    organizationId,
+    ticketId: ticketSeed[0].id,
+    status: "completed",
+    provider: "openai",
+    model: "gpt-5.4",
+    summary: "Retrieved billing policy, compared invoice state, prepared refund approval, and drafted customer reply.",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await tx.insert(agentRunEvents).values([
+    {
+      id: createId("evt"),
+      runId,
+      eventType: "retrieve_context",
+      detail: "Pulled billing policy, prior duplicate-charge case, and customer metadata.",
+      createdAt: now,
+    },
+    {
+      id: createId("evt"),
+      runId,
+      eventType: "mcp.stripe.get_payment_intents",
+      detail: "Compared latest invoice, upgrade proration, and capture state for the customer account.",
+      createdAt: new Date(now.getTime() + 30_000),
+    },
+    {
+      id: createId("evt"),
+      runId,
+      eventType: "draft_customer_reply",
+      detail: "Prepared a grounded reply with invoice IDs and the next billing check.",
+      createdAt: new Date(now.getTime() + 60_000),
+    },
+  ]);
+
+  await tx.insert(integrations).values([
+    {
+      id: createId("int"),
+      organizationId,
+      provider: "stripe",
+      label: "Production billing",
+      status: "active",
+      config: JSON.stringify({ scope: "billing:read" }),
+      createdAt: now,
+    },
+    {
+      id: createId("int"),
+      organizationId,
+      provider: "slack",
+      label: "Support escalation workspace",
+      status: "active",
+      config: JSON.stringify({ channels: ["#support-escalations"] }),
+      createdAt: now,
+    },
+  ]);
 }
 
 async function createUniqueOrganizationSlug(baseSlug: string) {

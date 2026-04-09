@@ -64,7 +64,7 @@ export function AppShell({ session, organization, currentPath, children }: AppSh
             <nav className="mt-6 space-y-2">
               {navItems.map(({ label, href, icon: Icon }) => {
                 const target = `/app/${organization.slug}/${href}`;
-                const isActive = currentPath === target;
+                const isActive = currentPath === target || currentPath.startsWith(`${target}/`);
 
                 return (
                   <Link
