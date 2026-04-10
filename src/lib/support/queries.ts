@@ -255,6 +255,28 @@ export async function addCopilotMessage(input: {
   });
 }
 
+export async function addAssistantPromptMessage(input: {
+  ticketId: string;
+  authorName: string;
+  body: string;
+}) {
+  await ensureDatabase();
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    await tx.insert(ticketMessages).values({
+      id: createId("msg"),
+      ticketId: input.ticketId,
+      authorName: input.authorName,
+      authorRole: "Teammate",
+      body: input.body,
+      createdAt: now,
+    });
+
+    await tx.update(tickets).set({ updatedAt: now }).where(eq(tickets.id, input.ticketId));
+  });
+}
+
 export async function createApprovalRequest(input: {
   organizationId: string;
   ticketId: string;

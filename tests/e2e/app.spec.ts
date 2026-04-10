@@ -68,7 +68,7 @@ test("customer support tenant flow works end-to-end", async ({ page }) => {
   await page.getByTestId("agent-prompt").fill("Summarize the root cause and draft the safest reply for this customer.");
   await page.getByTestId("run-copilot-submit").click();
   await expect(page.getByText("The assistant started working.")).toBeVisible();
-  await expect(page.getByText("SignalDesk Agent")).toBeVisible({ timeout: 120000 });
+  await expect(page.getByTestId("assistant-reply")).toBeVisible({ timeout: 120000 });
   await expect(page.getByTestId("run-status-detail")).not.toHaveText("idle");
 });
 
@@ -136,5 +136,5 @@ test("auth redirects, validation errors, and approval-backed actions work end-to
   await page.getByTestId("nav-inbox").click();
   await page.locator('[data-testid^="ticket-link-"]').first().click();
   await expect(page.getByTestId("ticket-status")).toHaveText("awaiting-approval");
-  await expect(page.getByText("Approver")).toBeVisible();
+  await expect(page.getByText("approved an action")).toBeVisible();
 });

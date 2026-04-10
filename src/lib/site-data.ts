@@ -1,20 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Blocks,
-  Bot,
-  Building2,
-  Cable,
-  Command,
-  Database,
   FileSearch,
-  GitBranch,
-  Lock,
   MessageSquareMore,
-  Radar,
   ShieldCheck,
   Sparkles,
   Ticket,
-  Workflow,
 } from "lucide-react";
 
 export type NavItem = {
@@ -58,17 +48,9 @@ export type AgentAction = {
   detail: string;
 };
 
-export type ArchitectureLayer = {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  bullets: string[];
-};
-
 export const navItems: NavItem[] = [
   { label: "Product", href: "#product" },
-  { label: "Workspace", href: "/workspace" },
-  { label: "Architecture", href: "/architecture" },
+  { label: "Workspace", href: "/signup" },
   { label: "Security", href: "#security" },
 ];
 
@@ -89,51 +71,51 @@ export const metrics: MetricCard[] = [
   {
     label: "Median first response",
     value: "46s",
-    detail: "Agent drafts from policy, past tickets, and connected tools.",
+    detail: "Suggested replies help teams answer faster without losing control.",
   },
   {
-    label: "Workspace isolation",
+    label: "Team visibility",
     value: "100%",
-    detail: "Every run, retrieval, tool token, and artifact stays org-scoped.",
+    detail: "Every conversation, draft, approval, and teammate action stays in one shared workspace.",
   },
 ];
 
 export const featureCards: FeatureCard[] = [
   {
-    title: "Shared inbox with agent memory",
+    title: "Shared inbox for every channel",
     description:
-      "Every ticket, escalation, and agent run stays attached to the exact customer, workspace, and approval trail.",
+      "Keep email, portal, and escalation conversations in one place so your team can respond together.",
     icon: MessageSquareMore,
   },
   {
-    title: "OpenCode-powered action runtime",
+    title: "Assistant help inside the ticket",
     description:
-      "The SaaS schedules agent runs server-side and executes the OpenCode CLI in sandboxed workers with structured traces.",
-    icon: Command,
+      "Ask for a summary, a reply draft, or the next best step without leaving the conversation.",
+    icon: Sparkles,
   },
   {
-    title: "MCP integrations per tenant",
+    title: "Connected customer context",
     description:
-      "Connect Stripe, Slack, Jira, internal APIs, and browser tools through a workspace-scoped MCP client registry.",
-    icon: Cable,
+      "Bring billing, account history, and internal notes into the same workspace so agents see the full picture.",
+    icon: Ticket,
   },
   {
-    title: "Support-grade retrieval",
+    title: "Helpful knowledge at hand",
     description:
-      "Policies, product docs, incident posts, and prior resolutions are indexed by org and project for high-signal grounding.",
+      "Policies, product docs, incident notes, and past resolutions are easy to search while you work.",
     icon: FileSearch,
   },
   {
-    title: "Approval gates for risky actions",
+    title: "Approvals for sensitive actions",
     description:
-      "Refunds, account mutations, and outbound messages can require human sign-off without blocking low-risk drafting flows.",
+      "Refunds, account changes, and other sensitive steps can wait for sign-off before they move forward.",
     icon: ShieldCheck,
   },
   {
-    title: "Observable by default",
+    title: "Clear team history",
     description:
-      "Prompt segments, retrieval bundles, tool calls, MCP sessions, artifacts, and final responses are all logged for review.",
-    icon: Radar,
+      "See what happened on every ticket, who approved what, and how the conversation moved forward.",
+    icon: MessageSquareMore,
   },
 ];
 
@@ -227,108 +209,6 @@ export const agentActions: AgentAction[] = [
   },
 ];
 
-export const architectureLayers: ArchitectureLayer[] = [
-  {
-    title: "Multi-tenant SaaS shell",
-    description:
-      "Next.js app router handles auth, organization routing, seat management, billing, admin settings, and the agent-facing support workspace.",
-    icon: Building2,
-    bullets: [
-      "Organizations, memberships, roles, projects, inboxes",
-      "Server actions and route handlers for low-latency mutations",
-      "Tenant-aware pages for inbox, KB, analytics, integrations, and approvals",
-    ],
-  },
-  {
-    title: "Support domain services",
-    description:
-      "Typed services own tickets, conversations, KB ingestion, policies, approvals, and agent run orchestration boundaries.",
-    icon: Workflow,
-    bullets: [
-      "Ticket intake, assignment, SLA tracking, and state changes",
-      "Approval policy engine for sensitive tool actions",
-      "Run coordinator converts UI intents into queued OpenCode jobs",
-    ],
-  },
-  {
-    title: "OpenCode execution plane",
-    description:
-      "A worker process launches the OpenCode CLI with a generated run spec, controlled tool envelope, tenant context, and artifact directory.",
-    icon: Bot,
-    bullets: [
-      "Each run gets isolated working storage and short-lived credentials",
-      "CLI stdout and structured events are normalized into run steps",
-      "Non-destructive actions can auto-complete while risky ones pause for approval",
-    ],
-  },
-  {
-    title: "MCP and tool gateway",
-    description:
-      "Workspace integrations are registered through a tenant-scoped MCP client broker plus first-party tools for search, retrieval, and internal APIs.",
-    icon: Blocks,
-    bullets: [
-      "Per-workspace integration credentials and allow-lists",
-      "Action envelopes with request validation and audit metadata",
-      "Consistent permission model across MCP tools and first-party tools",
-    ],
-  },
-  {
-    title: "Data and observability layer",
-    description:
-      "Postgres stores tenant data, object storage keeps artifacts, and searchable logs preserve prompt slices, tool traces, and approval decisions.",
-    icon: Database,
-    bullets: [
-      "Row-level tenancy via org id on every mutable resource",
-      "Document ingestion pipeline for KB, macros, incidents, and past tickets",
-      "Reviewable audit stream for debugging and scanner training",
-    ],
-  },
-  {
-    title: "Security controls",
-    description:
-      "Least-privilege tokens, content separation, approval checkpoints, and tenant isolation are treated as product primitives rather than bolt-ons.",
-    icon: Lock,
-    bullets: [
-      "Separate system instructions, retrieved content, memory, and tool results",
-      "Approval policies by tool, action type, amount threshold, and role",
-      "Prompt, retrieval, and execution trace capture for incident review",
-    ],
-  },
-];
-
-export const executionFlow = [
-  {
-    step: "01",
-    title: "Agent intent created",
-    detail:
-      "A user triggers summarize, draft, investigate, or act from a ticket or inbox view.",
-  },
-  {
-    step: "02",
-    title: "Run spec assembled",
-    detail:
-      "The server composes tenant context, allowed tools, approval policy, customer record, and retrieval hints.",
-  },
-  {
-    step: "03",
-    title: "OpenCode CLI launched",
-    detail:
-      "A worker starts `opencode` with the run spec, MCP registry config, and isolated storage for artifacts.",
-  },
-  {
-    step: "04",
-    title: "Tools and approvals mediated",
-    detail:
-      "Read actions can continue directly; high-risk actions are persisted as approval requests and paused.",
-  },
-  {
-    step: "05",
-    title: "Trace written back",
-    detail:
-      "Messages, tool outputs, citations, generated drafts, and audit events stream into the SaaS UI in near real time.",
-  },
-];
-
 export const designPrinciples = [
   {
     title: "Calm density",
@@ -346,6 +226,6 @@ export const designPrinciples = [
     title: "Infrastructure confidence",
     description:
       "Use Vercel-style product drama in hero sections: dark depth, technical gradients, and precise typography that suggests operational trust.",
-    icon: GitBranch,
+    icon: Sparkles,
   },
 ];

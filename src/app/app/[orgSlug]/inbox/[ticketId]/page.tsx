@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Clock3, Command, LifeBuoy, Sparkles } from "lucide-react";
+import { CheckCircle2, Clock3, LifeBuoy, MessagesSquare, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { CopilotRunButton } from "@/components/app/copilot-run-button";
 import { RunLiveRefresh } from "@/components/app/run-live-refresh";
@@ -30,9 +30,30 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
   const latestRun = runs[0] ?? null;
   const isRunning = latestRun?.status === "running";
   const hasStartedNotice = query.copilot === "started";
+  const customerMessages = messages.filter((entry) => entry.authorRole === "Customer" || entry.authorRole === "Support");
+  const assistantMessages = messages.filter((entry) => entry.authorRole === "Teammate" || entry.authorRole === "Copilot" || entry.authorRole === "Approver");
+  const activityItems = events.map((event) => {
+    if (event.eventType === "response.generated") {
+      return "Prepared a recommended next step for the team.";
+    }
+
+    if (event.eventType === "approval.requested") {
+      return `Flagged an action for approval: ${event.detail}`;
+    }
+
+    if (event.eventType === "context.loaded") {
+      return "Reviewed the ticket history and workspace knowledge before answering.";
+    }
+
+    if (event.eventType === "session.error") {
+      return `Hit a problem while preparing the update: ${event.detail}`;
+    }
+
+    return null;
+  }).filter(Boolean) as string[];
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[0.9fr_1.05fr_340px]">
+    <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_420px]">
       <RunLiveRefresh active={isRunning} />
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,31,0.9),rgba(7,12,24,0.92))] p-4 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
@@ -74,7 +95,7 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
 
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,22,39,0.9),rgba(8,12,23,0.96))] p-5 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
-          eyebrow="Live ticket"
+          eyebrow="Customer conversation"
           title={ticket.title}
           description={`${ticket.company} • ${ticket.requesterName} • ${ticket.sentiment}`}
           action={
@@ -90,52 +111,8 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
           }
         />
 
-        <div className="mt-6 rounded-[28px] border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(125,211,252,0.14),rgba(59,130,246,0.05))] p-5">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-cyan-100">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-medium text-white">Investigate with AI</h3>
-              <p className="mt-2 text-sm leading-7 text-slate-200">
-                Ask the assistant what you want done on this ticket. It reviews the conversation and your workspace context, then posts an internal note, drafts a reply, and asks for approval when an action needs sign-off.
-              </p>
-              {hasStartedNotice ? (
-                <div className="mt-4 rounded-[18px] border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
-                  The assistant started working. This page will refresh automatically while the update is in progress.
-                </div>
-              ) : null}
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Understands the conversation</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Uses connected workspace data</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Requests approval when needed</span>
-              </div>
-            </div>
-          </div>
-          <form action={runTicketCopilotAction} className="mt-5 space-y-3">
-            <input type="hidden" name="orgSlug" value={orgSlug} />
-            <input type="hidden" name="ticketId" value={ticket.id} />
-            <label className="block">
-              <span className="text-sm font-medium text-white">Ask the agent</span>
-              <textarea
-                name="userPrompt"
-                data-testid="agent-prompt"
-                rows={4}
-                placeholder="Examples: Summarize the issue. Draft a reply. Tell me what needs approval."
-                className="mt-2 w-full rounded-[20px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-              />
-            </label>
-            <div className="flex flex-wrap items-center gap-3">
-              <CopilotRunButton idleLabel="Ask assistant" pendingLabel="Starting assistant update..." />
-              <p className="text-sm text-slate-300">
-                {isRunning ? "The assistant is working now. New notes will appear here automatically." : latestRun ? "The latest assistant update is shown in the right panel and in the conversation." : "No assistant work has been run for this ticket yet."}
-              </p>
-            </div>
-          </form>
-        </div>
-
         <div className="mt-6 space-y-4">
-          {messages.map((entry) => (
+          {customerMessages.map((entry) => (
             <article key={entry.id} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -182,39 +159,104 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
 
       <aside className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,30,0.94),rgba(8,12,22,0.98))] p-4 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
-          eyebrow="Assistant Activity"
-          title={latestRun ? "Latest assistant update" : "No update yet"}
-          description={latestRun?.summary ?? "Ask the assistant to review the ticket and prepare the next step."}
+          eyebrow="Assistant"
+          title="Ask for help on this ticket"
+          description="Use the assistant like a teammate: ask a question, request a summary, or ask for a draft reply."
         />
-        <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-fuchsia-400/15 text-fuchsia-200">
-              <Command className="h-5 w-5" />
+        <div className="mt-5 rounded-[24px] border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(125,211,252,0.14),rgba(59,130,246,0.05))] p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-cyan-100">
+              <Sparkles className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-white">Update source</p>
-              <p data-testid="run-model" className="text-xs text-slate-400">{latestRun ? "Assistant generated an update for this ticket" : "No update yet"}</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-medium text-white">Assistant chat</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-200">
+                Ask for a summary, a reply draft, or a recommendation for what to do next.
+              </p>
+              {hasStartedNotice ? (
+                <div className="mt-4 rounded-[18px] border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
+                  The assistant started working. This panel will refresh automatically while the answer is being prepared.
+                </div>
+              ) : null}
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between rounded-[18px] border border-white/10 bg-[#07111d] px-3 py-2.5 text-sm text-slate-200">
-            <span>Progress</span>
-            <span data-testid="run-status-detail" className="rounded-full bg-white/8 px-2.5 py-1 text-xs text-white">
-              {latestRun?.status ?? "idle"}
-            </span>
+          <form action={runTicketCopilotAction} className="mt-5 space-y-3">
+            <input type="hidden" name="orgSlug" value={orgSlug} />
+            <input type="hidden" name="ticketId" value={ticket.id} />
+            <textarea
+              name="userPrompt"
+              data-testid="agent-prompt"
+              rows={4}
+              placeholder="Examples: Summarize the issue. Draft a reply. Tell me what needs approval."
+              className="w-full rounded-[20px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <CopilotRunButton idleLabel="Send to assistant" pendingLabel="Sending..." />
+              <span data-testid="run-status-detail" className="rounded-full bg-white/8 px-2.5 py-1 text-xs text-white">
+                {isRunning ? "working" : latestRun ? "ready" : "idle"}
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-fuchsia-400/15 text-fuchsia-200">
+              <MessagesSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Assistant conversation</p>
+              <p className="text-xs text-slate-400">Your requests and the assistant replies live here.</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {assistantMessages.length ? assistantMessages.map((entry) => (
+              <article
+                key={entry.id}
+                data-testid={entry.authorRole === "Copilot" ? "assistant-reply" : undefined}
+                className={cn(
+                  "rounded-[20px] border p-3",
+                  entry.authorRole === "Teammate"
+                    ? "border-cyan-300/20 bg-cyan-300/10"
+                    : entry.authorRole === "Approver"
+                      ? "border-amber-300/20 bg-amber-300/10"
+                      : "border-white/10 bg-black/20",
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-medium text-white">
+                    {entry.authorRole === "Teammate"
+                      ? `${entry.authorName} to assistant`
+                      : entry.authorRole === "Approver"
+                        ? `${entry.authorName} approved an action`
+                        : "Assistant"}
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(entry.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-7 text-slate-200">{entry.body}</p>
+              </article>
+            )) : (
+              <div className="rounded-[20px] border border-dashed border-white/10 bg-black/10 p-4 text-sm leading-7 text-slate-400">
+                No assistant conversation yet. Ask for a summary, a reply draft, or help deciding the next step.
+              </div>
+            )}
           </div>
         </div>
 
         <div className="mt-4 rounded-[24px] border border-white/10 bg-white/5 p-4">
-          <div className="space-y-3">
-            {events.map((event) => (
-              <article key={event.id} className="rounded-[20px] border border-white/10 bg-black/20 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-medium text-white">{event.eventType}</h3>
-                  <span className="rounded-full bg-white/8 px-2 py-1 text-[11px] text-slate-200">recorded</span>
-                </div>
-                <p className="mt-2 text-xs leading-6 text-slate-400">{event.detail}</p>
+          <p className="text-sm font-medium text-white">What the assistant did</p>
+          <div className="mt-4 space-y-3">
+            {activityItems.length ? activityItems.map((item) => (
+              <article key={item} className="rounded-[20px] border border-white/10 bg-black/20 p-3 text-sm leading-7 text-slate-300">
+                {item}
               </article>
-            ))}
+            )) : (
+              <div className="rounded-[20px] border border-dashed border-white/10 bg-black/10 p-4 text-sm leading-7 text-slate-400">
+                No assistant activity yet for this ticket.
+              </div>
+            )}
           </div>
         </div>
       </aside>

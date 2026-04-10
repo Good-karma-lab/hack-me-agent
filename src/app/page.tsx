@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  Command,
   MessageSquareText,
   Shield,
   Sparkles,
@@ -43,16 +42,10 @@ export default function Home() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/architecture"
-              className="hidden rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/5 sm:inline-flex"
-            >
-              Architecture
-            </Link>
-            <Link
-              href="/workspace"
+              href="/signup"
               className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-50"
             >
-              Open workspace
+              Start free
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -62,14 +55,13 @@ export default function Home() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm text-cyan-100">
               <Sparkles className="h-4 w-4" />
-              Multi-tenant AI support platform with OpenCode under the hood
+              Shared inbox, fast replies, and clearer teamwork
             </div>
             <h1 className="mt-8 max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
-              A support inbox where agents can think, search, and act safely.
+              Customer support that feels calm, fast, and in control.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              SignalDesk is a production-shaped SaaS for customer support teams: shared inbox,
-              tenant-scoped memory, MCP integrations, approval-aware actions, and full OpenCode traces.
+              SignalDesk helps support teams manage every conversation in one place, prepare better replies, and keep approvals and teamwork moving without the chaos.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link
@@ -83,7 +75,7 @@ export default function Home() {
                 href="/app"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 bg-white/5 px-6 py-3.5 text-sm font-medium text-white transition hover:bg-white/10"
               >
-                Open app
+                See workspace
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -133,7 +125,7 @@ export default function Home() {
                         }`}
                       >
                         <p className="text-sm text-white">{item}</p>
-                        <p className="mt-2 text-xs text-slate-400">OpenCode can draft, investigate, and queue actions</p>
+                        <p className="mt-2 text-xs text-slate-400">See the issue, understand the context, and keep the team aligned</p>
                       </div>
                     ))}
                   </div>
@@ -141,20 +133,17 @@ export default function Home() {
 
                 <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(125,211,252,0.16),rgba(14,165,233,0.04))] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-cyan-100">
-                      <Command className="h-5 w-5" />
-                    </div>
                     <div>
-                      <p className="text-sm font-medium text-white">OpenCode run trace</p>
-                      <p className="text-xs text-cyan-100/70">Grounded reply + approval-aware refund action</p>
+                      <p className="text-sm font-medium text-white">Suggested next step</p>
+                      <p className="text-xs text-cyan-100/70">Clear context, draft help, and approval checks where needed</p>
                     </div>
                   </div>
                   <div className="mt-4 space-y-3">
                     {[
-                      "retrieve_context → tenant KB, billing policy, prior ticket",
-                      "mcp.stripe.get_payment_intents → scoped account lookup",
-                      "prepare_refund_action → pending approval threshold",
-                      "draft_customer_reply → grounded response with invoice ids",
+                      "Understand the ticket and recent account history",
+                      "Bring in the details needed to answer accurately",
+                      "Flag anything that needs approval before it moves forward",
+                      "Draft a clear reply for the customer",
                     ].map((line) => (
                       <div
                         key={line}
@@ -183,11 +172,10 @@ export default function Home() {
         <div className="max-w-2xl">
           <p className="text-xs uppercase tracking-[0.38em] text-cyan-200/70">Product surface</p>
           <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white">
-            Built like a normal support SaaS, not a contrived demo.
+            Everything your support team needs in one workspace.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-300">
-            The product intentionally exposes the messy, realistic boundaries your scanner should care about:
-            tenant isolation, approvals, retrieval, integrations, tool execution, and durable audit logs.
+            Bring conversations, internal knowledge, approvals, and teammate context together so every customer gets a faster, more confident answer.
           </p>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -211,13 +199,11 @@ export default function Home() {
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
               <p className="text-xs uppercase tracking-[0.38em] text-cyan-200/70">Design direction</p>
-              <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white">
-                Inspired by the best SaaS interfaces, but not copied from one.
+                <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white">
+                Designed for teams who spend all day in customer conversations.
               </h2>
               <p className="mt-4 text-base leading-8 text-slate-300">
-                The visual system mixes three reference points: Linear for calm density, Intercom for support
-                clarity, and Vercel for cinematic technical polish. The result is darker, more editorial, and more
-                operations-focused than any one of them.
+                SignalDesk keeps the interface clean and focused so agents can move from triage to reply without losing context.
               </p>
             </div>
             <div className="grid gap-4">
@@ -251,17 +237,17 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Safe by default</p>
-                <h2 className="mt-2 text-3xl font-semibold text-white">Normal product, real boundaries.</h2>
+                <h2 className="mt-2 text-3xl font-semibold text-white">Built for trust and control.</h2>
               </div>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {[
-                "Per-tenant org, project, and integration scope",
-                "Approval policies for risky mutations and refunds",
-                "Separated prompt segments and retrieval bundles",
-                "Audit logs for runs, tools, and approvals",
-                "Allow-listed MCP tools per workspace",
-                "Grounded drafting against tenant-only knowledge",
+                "Separate workspaces for every team",
+                "Approvals for sensitive actions and refunds",
+                "Clear history for conversations and decisions",
+                "Connected customer context without losing control",
+                "Protected access for teammates and admins",
+                "Reliable drafts grounded in your workspace knowledge",
               ].map((item) => (
                 <div
                   key={item}
@@ -275,7 +261,7 @@ export default function Home() {
           </div>
 
           <div className="rounded-[32px] border border-cyan-300/15 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(255,255,255,0.04))] p-8">
-            <p className="text-xs uppercase tracking-[0.32em] text-cyan-100/70">Trusted by teams building with AI</p>
+            <p className="text-xs uppercase tracking-[0.32em] text-cyan-100/70">Trusted by growing support teams</p>
             <div className="mt-6 grid grid-cols-2 gap-3 text-sm text-slate-200 sm:grid-cols-3 lg:grid-cols-2">
               {trustLogos.map((logo) => (
                 <div
@@ -290,7 +276,7 @@ export default function Home() {
               href="/signup"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-slate-950 transition hover:bg-cyan-50"
             >
-              Start building a tenant
+              Start your workspace
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

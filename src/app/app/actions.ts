@@ -8,6 +8,7 @@ import { validateIntegrationConfig } from "@/lib/integrations/validation";
 import { runTicketCopilot } from "@/lib/opencode/service";
 import {
   addIntegration,
+  addAssistantPromptMessage,
   addKnowledgeDocument,
   addTicketReply,
   executeApprovalRequest,
@@ -163,9 +164,17 @@ export async function createInviteAction(formData: FormData) {
 export async function runTicketCopilotAction(formData: FormData) {
   const orgSlug = requiredString(formData, "orgSlug");
   const ticketId = requiredString(formData, "ticketId");
-  const { organization } = await requireOrganizationAccess(orgSlug);
+  const { organization, session } = await requireOrganizationAccess(orgSlug);
   const userPromptValue = formData.get("userPrompt");
   const userPrompt = typeof userPromptValue === "string" && userPromptValue.trim().length > 0 ? userPromptValue.trim() : undefined;
+
+  if (userPrompt) {
+    await addAssistantPromptMessage({
+      ticketId,
+      authorName: session.user.name,
+      body: userPrompt,
+    });
+  }
 
   await runTicketCopilot({
     organizationId: organization.id,
