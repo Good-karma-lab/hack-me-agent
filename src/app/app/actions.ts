@@ -164,10 +164,13 @@ export async function runTicketCopilotAction(formData: FormData) {
   const orgSlug = requiredString(formData, "orgSlug");
   const ticketId = requiredString(formData, "ticketId");
   const { organization } = await requireOrganizationAccess(orgSlug);
+  const userPromptValue = formData.get("userPrompt");
+  const userPrompt = typeof userPromptValue === "string" && userPromptValue.trim().length > 0 ? userPromptValue.trim() : undefined;
 
   await runTicketCopilot({
     organizationId: organization.id,
     ticketId,
+    userPrompt,
   });
 
   revalidatePath(`/app/${orgSlug}/inbox/${ticketId}`);

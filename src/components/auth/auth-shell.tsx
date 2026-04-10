@@ -13,7 +13,7 @@ type AuthShellProps = {
 
 const highlights = [
   "Real tenant-backed auth and organization boundaries",
-  "OpenCode-driven support copilot with approval gates",
+  "Shared assistant support with approval gates",
   "Built for end-to-end testing, not demo-only screenshots",
 ];
 
@@ -44,8 +44,8 @@ export function AuthShell({
             Support teams, agent runs, and tenant controls in one workspace.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
-            Build the kind of production-shaped agentic app you can actually test: shared inbox,
-            retrieval, approvals, tool traces, and SaaS-grade access control.
+            Build the kind of production-shaped support workspace you can actually test: shared inbox,
+            knowledge, approvals, and SaaS-grade access control.
           </p>
 
           <div className="mt-10 space-y-4">

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, BookOpen, Bot, Building2, Inbox, Search, Settings2, Shield } from "lucide-react";
 import { logoutAction } from "@/app/(auth)/actions";
 import type { AuthSession } from "@/lib/auth/session";
@@ -19,11 +22,12 @@ type AppShellProps = {
     name: string;
     role: string;
   };
-  currentPath: string;
   children: React.ReactNode;
 };
 
-export function AppShell({ session, organization, currentPath, children }: AppShellProps) {
+export function AppShell({ session, organization, children }: AppShellProps) {
+  const pathname = usePathname();
+
   return (
     <main className="min-h-screen bg-[#07111f] text-white">
       <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -64,13 +68,15 @@ export function AppShell({ session, organization, currentPath, children }: AppSh
             <nav className="mt-6 space-y-2">
               {navItems.map(({ label, href, icon: Icon }) => {
                 const target = `/app/${organization.slug}/${href}`;
-                const isActive = currentPath === target || currentPath.startsWith(`${target}/`);
+                const isActive = pathname === target || pathname.startsWith(`${target}/`);
 
                 return (
                   <Link
                     key={label}
                     href={target}
                     data-testid={`nav-${href}`}
+                    data-active={isActive ? "true" : "false"}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition",
                       isActive

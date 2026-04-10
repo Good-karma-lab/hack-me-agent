@@ -14,9 +14,9 @@ export default async function RunsPage({ params }: RunsPageProps) {
   return (
     <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,31,0.9),rgba(7,12,24,0.92))] p-5 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
       <PageHeader
-        eyebrow="Copilot Runs"
-        title="Recorded agent runs"
-        description="The support domain now persists run records per tenant. The next milestone will execute them through the OpenCode SDK."
+        eyebrow="Assistant History"
+        title="Past assistant updates"
+        description="Review previous assistant work across your workspace."
       />
       <div className="mt-6 space-y-4">
         {runs.map((run) => (
@@ -24,7 +24,7 @@ export default async function RunsPage({ params }: RunsPageProps) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-medium text-white">{run.id}</h3>
-                <p className="mt-1 text-sm text-slate-400">{run.provider}/{run.model}</p>
+                <p className="mt-1 text-sm text-slate-400">Ticket update</p>
               </div>
               <span data-testid={`run-status-${run.id}`} className="rounded-full bg-white/8 px-3 py-1 text-xs text-slate-200">{run.status}</span>
             </div>

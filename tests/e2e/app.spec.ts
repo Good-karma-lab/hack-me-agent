@@ -36,11 +36,14 @@ async function login(page: Page, email: string) {
 test("customer support tenant flow works end-to-end", async ({ page }) => {
   await createWorkspace(page, "flow");
 
+  await expect(page.getByTestId("nav-inbox")).toHaveAttribute("data-active", "true");
+
   await page.getByTestId("reply-body").fill("Following up from Playwright with a tenant-scoped reply.");
   await page.getByTestId("reply-submit").click();
   await expect(page.getByText("Following up from Playwright with a tenant-scoped reply.")).toBeVisible();
 
   await page.getByTestId("nav-knowledge").click();
+  await expect(page.getByTestId("nav-knowledge")).toHaveAttribute("data-active", "true");
   await page.getByTestId("knowledge-title").fill("Refund escalation matrix");
   await page.getByTestId("knowledge-source").fill("playbook");
   await page.getByTestId("knowledge-body").fill("Escalate duplicate billing over $250 to the workspace owner.");
@@ -59,6 +62,14 @@ test("customer support tenant flow works end-to-end", async ({ page }) => {
   const integrationId = toggleId?.replace("integration-toggle-", "");
   await toggle.click();
   await expect(page.getByTestId(`integration-status-${integrationId}`)).toHaveText("inactive");
+
+  await page.getByTestId("nav-inbox").click();
+  await expect(page.getByTestId("nav-inbox")).toHaveAttribute("data-active", "true");
+  await page.getByTestId("agent-prompt").fill("Summarize the root cause and draft the safest reply for this customer.");
+  await page.getByTestId("run-copilot-submit").click();
+  await expect(page.getByText("The assistant started working.")).toBeVisible();
+  await expect(page.getByText("SignalDesk Agent")).toBeVisible({ timeout: 120000 });
+  await expect(page.getByTestId("run-status-detail")).not.toHaveText("idle");
 });
 
 test("invite acceptance creates a second real workspace member", async ({ page, browser }) => {

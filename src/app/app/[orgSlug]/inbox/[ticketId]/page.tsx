@@ -82,9 +82,9 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
               <div data-testid="ticket-status" className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200">
                 {ticket.status}
               </div>
-              <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-200">
-                <CheckCircle2 className="h-4 w-4" />
-                {isRunning ? "AI investigation running" : latestRun ? "AI draft available" : "No AI draft yet"}
+                <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-200">
+                  <CheckCircle2 className="h-4 w-4" />
+                {isRunning ? "Assistant is working" : latestRun ? "Assistant update available" : "No assistant update yet"}
               </div>
             </div>
           }
@@ -98,30 +98,40 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
             <div className="min-w-0 flex-1">
               <h3 className="text-lg font-medium text-white">Investigate with AI</h3>
               <p className="mt-2 text-sm leading-7 text-slate-200">
-                This runs the copilot on the current ticket. It reads the ticket thread, tenant knowledge, and active integrations, then adds an internal AI note, prepares a customer reply, and opens approval requests if the action is sensitive.
+                Ask the assistant what you want done on this ticket. It reviews the conversation and your workspace context, then posts an internal note, drafts a reply, and asks for approval when an action needs sign-off.
               </p>
               {hasStartedNotice ? (
                 <div className="mt-4 rounded-[18px] border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
-                  AI investigation started. This page will refresh automatically while the run is in progress.
+                  The assistant started working. This page will refresh automatically while the update is in progress.
                 </div>
               ) : null}
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Reads ticket + knowledge</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Uses active MCP tools</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Creates approvals when needed</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Understands the conversation</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Uses connected workspace data</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Requests approval when needed</span>
               </div>
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <form action={runTicketCopilotAction}>
-              <input type="hidden" name="orgSlug" value={orgSlug} />
-              <input type="hidden" name="ticketId" value={ticket.id} />
-              <CopilotRunButton idleLabel="Investigate with AI" pendingLabel="Starting AI investigation..." />
-            </form>
-            <p className="text-sm text-slate-300">
-              {isRunning ? "Current run is active. New notes will appear here automatically." : latestRun ? "The latest AI result is shown in the right rail and thread." : "No AI work has been run for this ticket yet."}
-            </p>
-          </div>
+          <form action={runTicketCopilotAction} className="mt-5 space-y-3">
+            <input type="hidden" name="orgSlug" value={orgSlug} />
+            <input type="hidden" name="ticketId" value={ticket.id} />
+            <label className="block">
+              <span className="text-sm font-medium text-white">Ask the agent</span>
+              <textarea
+                name="userPrompt"
+                data-testid="agent-prompt"
+                rows={4}
+                placeholder="Examples: Summarize the issue. Draft a reply. Tell me what needs approval."
+                className="mt-2 w-full rounded-[20px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <CopilotRunButton idleLabel="Ask assistant" pendingLabel="Starting assistant update..." />
+              <p className="text-sm text-slate-300">
+                {isRunning ? "The assistant is working now. New notes will appear here automatically." : latestRun ? "The latest assistant update is shown in the right panel and in the conversation." : "No assistant work has been run for this ticket yet."}
+              </p>
+            </div>
+          </form>
         </div>
 
         <div className="mt-6 space-y-4">
@@ -172,9 +182,9 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
 
       <aside className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,30,0.94),rgba(8,12,22,0.98))] p-4 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
-          eyebrow="Run trace"
-          title={latestRun?.id ?? "No run yet"}
-          description={latestRun?.summary ?? "Run the AI investigation to generate an internal note, reply draft, and any approval requests."}
+          eyebrow="Assistant Activity"
+          title={latestRun ? "Latest assistant update" : "No update yet"}
+          description={latestRun?.summary ?? "Ask the assistant to review the ticket and prepare the next step."}
         />
         <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-4">
           <div className="flex items-center gap-3">
@@ -182,12 +192,12 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
               <Command className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Model</p>
-              <p data-testid="run-model" className="text-xs text-slate-400">{latestRun ? `${latestRun.provider}/${latestRun.model}` : "pending"}</p>
+              <p className="text-sm font-medium text-white">Update source</p>
+              <p data-testid="run-model" className="text-xs text-slate-400">{latestRun ? "Assistant generated an update for this ticket" : "No update yet"}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between rounded-[18px] border border-white/10 bg-[#07111d] px-3 py-2.5 text-sm text-slate-200">
-            <span>Status</span>
+            <span>Progress</span>
             <span data-testid="run-status-detail" className="rounded-full bg-white/8 px-2.5 py-1 text-xs text-white">
               {latestRun?.status ?? "idle"}
             </span>

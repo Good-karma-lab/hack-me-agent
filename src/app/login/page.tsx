@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell
       title="Sign in"
-      description="Access your tenant-scoped support workspace and continue running OpenCode-powered investigations."
+      description="Access your workspace and continue helping customers with shared drafts, approvals, and assistant support."
       alternateLabel="Need an account?"
       alternateHref="/signup"
       alternateCta="Create one"

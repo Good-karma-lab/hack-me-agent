@@ -36,6 +36,7 @@ type OpencodeConfig = {
 type RunTicketCopilotInput = {
   organizationId: string;
   ticketId: string;
+  userPrompt?: string;
 };
 
 type StructuredRunResult = {
@@ -255,9 +256,10 @@ async function processTicketCopilot(input: RunTicketCopilotInput & { runId: stri
       `Knowledge documents:\n${documents.map((document) => `- ${document.title} [${document.source}]: ${document.body}`).join("\n")}`,
       `Existing approvals:\n${approvals.map((approval) => `- ${approval.title}: ${approval.status}`).join("\n") || "None"}`,
       `Available integrations:\n${integrations.map((integration) => `- ${integration.label} (${integration.provider})`).join("\n") || "None"}`,
+      input.userPrompt ? `User request for the agent:\n${input.userPrompt}` : "",
       "If a relevant MCP server is available, use it explicitly and report which MCP tools you used.",
       "Prefer tenant-scoped sources. Do not invent external facts.",
-    ].join("\n\n");
+    ].filter(Boolean).join("\n\n");
 
     await promptSession(opencode.server.url, session.id, {
       noReply: true,

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SignalDesk | Customer Support Copilot SaaS",
   description:
-    "A multi-tenant customer support copilot SaaS powered by OpenCode, tenant-scoped tools, and approval-aware agent workflows.",
+    "A multi-tenant customer support workspace with shared inboxes, assistant help, approvals, and team collaboration.",
 };
 
 export default function RootLayout({

@@ -23,7 +23,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
       <PageHeader
         eyebrow="Settings"
         title="Integrations and tenant controls"
-        description="Workspace-scoped integrations are persisted per tenant and become the basis for the OpenCode MCP layer."
+        description="Manage teammates, connected services, and workspace-level controls in one place."
       />
       {query.error ? (
         <div className="mt-6 rounded-[20px] border border-rose-400/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{query.error}</div>
@@ -73,7 +73,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
                 <h3 className="text-lg font-medium text-white">{integration.label}</h3>
                 <span data-testid={`integration-status-${integration.id}`} className="rounded-full bg-emerald-300/12 px-3 py-1 text-xs text-emerald-100">{integration.status}</span>
               </div>
-              <p className="mt-2 text-sm text-slate-400">Provider: {integration.provider}</p>
+              <p className="mt-2 text-sm text-slate-400">Connection type: {integration.provider}</p>
               <pre className="mt-3 overflow-x-auto rounded-[18px] border border-white/10 bg-[#07111d] p-3 text-xs text-slate-300">{integration.config}</pre>
               <form action={updateIntegrationStatusAction} className="mt-4">
                 <input type="hidden" name="orgSlug" value={orgSlug} />
@@ -105,9 +105,9 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
           <form action={addIntegrationAction} className="rounded-[24px] border border-white/10 bg-white/5 p-5">
             <input type="hidden" name="orgSlug" value={orgSlug} />
             <h3 className="text-lg font-medium text-white">Add integration</h3>
-            <p className="mt-2 text-sm leading-7 text-slate-400">Use real MCP config JSON. `local` integrations require `command`; `remote` integrations require absolute `url`.</p>
+            <p className="mt-2 text-sm leading-7 text-slate-400">Paste the connection settings for this service in JSON format.</p>
             <div className="mt-4 space-y-3">
-              <input data-testid="integration-provider" name="provider" required placeholder="Provider: stripe, slack, jira, mcp" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
+              <input data-testid="integration-provider" name="provider" required placeholder="Connection type" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
               <input data-testid="integration-label" name="label" required placeholder="Display label" className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
               <textarea data-testid="integration-config" name="config" required rows={9} placeholder='{"type":"remote","url":"https://example.com/mcp","headers":{"Authorization":"Bearer token"}}' className="w-full rounded-[18px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500" />
               <button data-testid="integration-submit" className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-cyan-50">Save integration</button>
