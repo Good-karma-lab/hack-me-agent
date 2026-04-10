@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CheckCircle2, Clock3, LifeBuoy, MessagesSquare, Sparkles } from "lucide-react";
+import { ChatMessage } from "@/components/app/chat-message";
 import { PageHeader } from "@/components/app/page-header";
 import { CopilotRunButton } from "@/components/app/copilot-run-button";
 import { RunLiveRefresh } from "@/components/app/run-live-refresh";
@@ -32,6 +33,7 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
   const hasStartedNotice = query.copilot === "started";
   const customerMessages = messages.filter((entry) => entry.authorRole === "Customer" || entry.authorRole === "Support");
   const assistantMessages = messages.filter((entry) => entry.authorRole === "Teammate" || entry.authorRole === "Copilot" || entry.authorRole === "Approver");
+  const latestAssistantMessageId = [...assistantMessages].reverse().find((entry) => entry.authorRole === "Copilot")?.id;
   const activityItems = events.map((event) => {
     if (event.eventType === "response.generated") {
       return "Prepared a recommended next step for the team.";
@@ -53,7 +55,7 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
   }).filter(Boolean) as string[];
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_420px]">
+    <section className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_380px]">
       <RunLiveRefresh active={isRunning} />
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,31,0.9),rgba(7,12,24,0.92))] p-4 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
@@ -111,6 +113,10 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
           }
         />
 
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+          This is the customer-facing thread. Use the panel on the right to ask the assistant for a summary, a draft reply, or the next step.
+        </div>
+
         <div className="mt-6 space-y-4">
           {customerMessages.map((entry) => (
             <article key={entry.id} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
@@ -160,8 +166,8 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
       <aside className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,30,0.94),rgba(8,12,22,0.98))] p-4 shadow-[0_24px_60px_rgba(2,6,18,0.35)]">
         <PageHeader
           eyebrow="Assistant"
-          title="Ask for help on this ticket"
-          description="Use the assistant like a teammate: ask a question, request a summary, or ask for a draft reply."
+          title="Chat with the assistant"
+          description="Ask questions, request a draft reply, or get help deciding what to do next."
         />
         <div className="mt-5 rounded-[24px] border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(125,211,252,0.14),rgba(59,130,246,0.05))] p-5">
           <div className="flex items-start gap-4">
@@ -171,7 +177,7 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
             <div className="min-w-0 flex-1">
               <h3 className="text-lg font-medium text-white">Assistant chat</h3>
               <p className="mt-2 text-sm leading-7 text-slate-200">
-                Ask for a summary, a reply draft, or a recommendation for what to do next.
+                Type naturally, like you would in ChatGPT. The assistant will answer in this conversation.
               </p>
               {hasStartedNotice ? (
                 <div className="mt-4 rounded-[18px] border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">
@@ -187,7 +193,7 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
               name="userPrompt"
               data-testid="agent-prompt"
               rows={4}
-              placeholder="Examples: Summarize the issue. Draft a reply. Tell me what needs approval."
+              placeholder="Ask anything about this ticket..."
               className="w-full rounded-[20px] border border-white/10 bg-[#07111d] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
             />
             <div className="flex items-center justify-between gap-3">
@@ -235,7 +241,9 @@ export default async function TicketDetailPage({ params, searchParams }: TicketD
                     {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(entry.createdAt)}
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-7 text-slate-200">{entry.body}</p>
+                <div className="mt-2">
+                  <ChatMessage body={entry.body} animate={entry.authorRole === "Copilot" && entry.id === latestAssistantMessageId} />
+                </div>
               </article>
             )) : (
               <div className="rounded-[20px] border border-dashed border-white/10 bg-black/10 p-4 text-sm leading-7 text-slate-400">

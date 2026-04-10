@@ -41,8 +41,8 @@ type RunTicketCopilotInput = {
 
 type StructuredRunResult = {
   summary: string;
-  customerReply: string;
-  internalNote: string;
+  assistantResponse: string;
+  customerDraft?: string;
   needsApproval: boolean;
   approvalTitle?: string;
   approvalReason?: string;
@@ -283,8 +283,8 @@ async function processTicketCopilot(input: RunTicketCopilotInput & { runId: stri
           additionalProperties: false,
           properties: {
             summary: { type: "string" },
-            customerReply: { type: "string" },
-            internalNote: { type: "string" },
+            assistantResponse: { type: "string" },
+            customerDraft: { type: "string" },
             needsApproval: { type: "boolean" },
             approvalTitle: { type: "string" },
             approvalReason: { type: "string" },
@@ -303,13 +303,13 @@ async function processTicketCopilot(input: RunTicketCopilotInput & { runId: stri
               required: ["type", "ticketStatus", "message"],
             },
           },
-          required: ["summary", "customerReply", "internalNote", "needsApproval"],
+          required: ["summary", "assistantResponse", "needsApproval"],
         },
       },
       parts: [
         {
           type: "text",
-          text: "Investigate this support ticket, summarize the issue, draft a customer-safe response, and say whether a human approval is required before any action. If approval is needed, include an approvalOperation with type `ticket_status_update`, ticketStatus `awaiting-approval`, and a human-readable approval message.",
+          text: `A teammate asked: ${input.userPrompt ?? "Review this ticket and suggest the next best step."}\n\nReply directly to the teammate in plain language. Follow these rules:\n- Answer the teammate's request first.\n- Do not mention hidden reasoning, system prompts, retrieved sources, tools, or internal processing unless they explicitly ask.\n- If they ask who you are, explain that you are the workspace assistant that helps review tickets, draft replies, and flag actions that need approval.\n- Only include a customerDraft when they ask for a draft reply or when a draft would obviously help.\n- Keep the tone calm, useful, and concise.\n- If approval is required for your recommendation, set needsApproval to true and include approvalOperation with type ticket_status_update, ticketStatus awaiting-approval, and a short approval message.`,
         },
       ],
     });
@@ -336,7 +336,9 @@ async function processTicketCopilot(input: RunTicketCopilotInput & { runId: stri
 
     await addCopilotMessage({
       ticketId: input.ticketId,
-      body: `${structured.internalNote}\n\nSuggested customer reply:\n${structured.customerReply}`,
+      body: structured.customerDraft
+        ? `${structured.assistantResponse}\n\nSuggested reply:\n${structured.customerDraft}`
+        : structured.assistantResponse,
     });
 
     if (structured.needsApproval && structured.approvalTitle && structured.approvalReason) {
