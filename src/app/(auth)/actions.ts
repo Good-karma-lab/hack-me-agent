@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createUserWithOrganization, validateUserCredentials } from "@/lib/auth/queries";
+import { acceptInviteWithNewUser, createUserWithOrganization, validateUserCredentials } from "@/lib/auth/queries";
 import { clearSession, createSession, requireSession } from "@/lib/auth/session";
 import { loginSchema, signUpSchema } from "@/lib/validation/auth";
 
@@ -48,7 +48,7 @@ export async function signupAction(formData: FormData) {
   try {
     const result = await createUserWithOrganization(parsed.data);
     await createSession(result.userId);
-    redirect(`/app/${result.organizationSlug}/inbox`);
+    return redirect(`/app/${result.organizationSlug}/inbox`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create account.";
     redirect(getErrorRedirect("/signup", message));
@@ -58,4 +58,30 @@ export async function signupAction(formData: FormData) {
 export async function logoutAction() {
   await clearSession();
   redirect("/");
+}
+
+export async function acceptInviteAction(formData: FormData) {
+  const token = formData.get("token");
+  const name = formData.get("name");
+  const password = formData.get("password");
+
+  if (typeof token !== "string" || typeof name !== "string" || typeof password !== "string") {
+    redirect(getErrorRedirect("/login", "Invalid invite acceptance request."));
+  }
+
+  let result: { userId: string; organizationSlug: string };
+
+  try {
+    result = await acceptInviteWithNewUser({
+      token,
+      name: name.trim(),
+      password,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to accept invite.";
+    redirect(`/invite/${token}?error=${encodeURIComponent(message)}`);
+  }
+
+  await createSession(result.userId);
+  redirect(`/app/${result.organizationSlug}/inbox`);
 }

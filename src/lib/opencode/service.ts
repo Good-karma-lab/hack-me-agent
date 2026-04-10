@@ -46,6 +46,11 @@ type StructuredRunResult = {
   approvalTitle?: string;
   approvalReason?: string;
   usedMcpTools?: string[];
+  approvalOperation?: {
+    type: "ticket_status_update";
+    ticketStatus: string;
+    message: string;
+  };
 };
 
 const OPENCODE_MODEL = process.env.OPENCODE_MODEL;
@@ -257,6 +262,16 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
               type: "array",
               items: { type: "string" },
             },
+            approvalOperation: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                type: { type: "string" },
+                ticketStatus: { type: "string", enum: ["awaiting-approval"] },
+                message: { type: "string" },
+              },
+              required: ["type", "ticketStatus", "message"],
+            },
           },
           required: ["summary", "customerReply", "internalNote", "needsApproval"],
         },
@@ -264,7 +279,7 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
       parts: [
         {
           type: "text",
-          text: "Investigate this support ticket, summarize the issue, draft a customer-safe response, and say whether a human approval is required before any action.",
+          text: "Investigate this support ticket, summarize the issue, draft a customer-safe response, and say whether a human approval is required before any action. If approval is needed, include an approvalOperation with type `ticket_status_update`, ticketStatus `awaiting-approval`, and a human-readable approval message.",
         },
       ],
     });
@@ -301,6 +316,14 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
         title: structured.approvalTitle,
         description: structured.approvalReason,
         createdBy: "SignalDesk Agent",
+        operationType: structured.approvalOperation?.type,
+        operationPayload: structured.approvalOperation
+          ? JSON.stringify({
+            ticketStatus: structured.approvalOperation.ticketStatus,
+            message: structured.approvalOperation.message,
+            ticketId: input.ticketId,
+          })
+          : undefined,
       });
 
       await appendAgentRunEvent({

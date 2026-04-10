@@ -27,6 +27,11 @@ export default async function ApprovalsPage({ params }: ApprovalsPageProps) {
               <span data-testid={`approval-status-${approval.id}`} className="rounded-full bg-amber-300/12 px-3 py-1 text-xs text-amber-100">{approval.status}</span>
             </div>
             <p className="mt-3 text-sm leading-7 text-slate-300">{approval.description}</p>
+            {approval.operation ? (
+              <p data-testid={`approval-operation-${approval.id}`} className="mt-2 text-xs uppercase tracking-[0.24em] text-cyan-100/70">
+                Executes {approval.operation.operationType}
+              </p>
+            ) : null}
             {approval.status === "pending" ? (
               <div className="mt-4 flex gap-3">
                 <form action={updateApprovalStatusAction}>

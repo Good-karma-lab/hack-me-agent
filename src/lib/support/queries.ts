@@ -3,6 +3,7 @@ import { db, ensureDatabase } from "@/lib/db";
 import {
   agentRunEvents,
   agentRuns,
+  approvalOperations,
   approvalRequests,
   integrations,
   knowledgeDocuments,
@@ -62,7 +63,16 @@ export async function listKnowledgeDocuments(organizationId: string) {
 
 export async function listApprovalRequests(organizationId: string) {
   await ensureDatabase();
-  return db.select().from(approvalRequests).where(eq(approvalRequests.organizationId, organizationId)).orderBy(desc(approvalRequests.updatedAt));
+  const approvals = await db.select().from(approvalRequests).where(eq(approvalRequests.organizationId, organizationId)).orderBy(desc(approvalRequests.updatedAt));
+
+  const operations = await Promise.all(
+    approvals.map((approval) => db.select().from(approvalOperations).where(eq(approvalOperations.approvalRequestId, approval.id)).limit(1)),
+  );
+
+  return approvals.map((approval, index) => ({
+    ...approval,
+    operation: operations[index]?.[0] ?? null,
+  }));
 }
 
 export async function listIntegrations(organizationId: string) {
@@ -135,6 +145,7 @@ export async function addIntegration(input: {
   provider: string;
   label: string;
   config: string;
+  status?: string;
 }) {
   await ensureDatabase();
 
@@ -144,9 +155,22 @@ export async function addIntegration(input: {
     provider: input.provider,
     label: input.label,
     config: input.config,
-    status: "active",
+    status: input.status ?? "active",
     createdAt: new Date(),
   });
+}
+
+export async function updateIntegrationStatus(input: {
+  integrationId: string;
+  organizationId: string;
+  status: "active" | "inactive";
+}) {
+  await ensureDatabase();
+
+  await db
+    .update(integrations)
+    .set({ status: input.status })
+    .where(and(eq(integrations.id, input.integrationId), eq(integrations.organizationId, input.organizationId)));
 }
 
 export async function createAgentRunRecord(input: {
@@ -237,19 +261,89 @@ export async function createApprovalRequest(input: {
   title: string;
   description: string;
   createdBy: string;
+  operationType?: string;
+  operationPayload?: string;
 }) {
   await ensureDatabase();
   const now = new Date();
+  const approvalId = createId("apr");
 
-  await db.insert(approvalRequests).values({
-    id: createId("apr"),
-    organizationId: input.organizationId,
-    ticketId: input.ticketId,
-    title: input.title,
-    description: input.description,
-    status: "pending",
-    createdBy: input.createdBy,
-    createdAt: now,
-    updatedAt: now,
+  await db.transaction(async (tx) => {
+    await tx.insert(approvalRequests).values({
+      id: approvalId,
+      organizationId: input.organizationId,
+      ticketId: input.ticketId,
+      title: input.title,
+      description: input.description,
+      status: "pending",
+      createdBy: input.createdBy,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (input.operationType && input.operationPayload) {
+      await tx.insert(approvalOperations).values({
+        id: createId("apo"),
+        approvalRequestId: approvalId,
+        operationType: input.operationType,
+        payload: input.operationPayload,
+        createdAt: now,
+      });
+    }
+  });
+
+  return approvalId;
+}
+
+export async function executeApprovalRequest(input: {
+  approvalId: string;
+  organizationId: string;
+  actorName: string;
+}) {
+  await ensureDatabase();
+
+  const [approval] = await db
+    .select()
+    .from(approvalRequests)
+    .where(and(eq(approvalRequests.id, input.approvalId), eq(approvalRequests.organizationId, input.organizationId)))
+    .limit(1);
+
+  if (!approval || approval.status !== "approved") {
+    return;
+  }
+
+  const [operation] = await db
+    .select()
+    .from(approvalOperations)
+    .where(eq(approvalOperations.approvalRequestId, input.approvalId))
+    .limit(1);
+
+  if (!operation || operation.executedAt) {
+    return;
+  }
+
+  const payload = JSON.parse(operation.payload) as { ticketStatus?: string; message?: string; ticketId?: string };
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    if (operation.operationType === "ticket_status_update" && approval.ticketId && payload.ticketStatus) {
+      await tx.update(tickets).set({ status: payload.ticketStatus, updatedAt: now }).where(eq(tickets.id, approval.ticketId));
+    }
+
+    if (approval.ticketId && payload.message) {
+      await tx.insert(ticketMessages).values({
+        id: createId("msg"),
+        ticketId: approval.ticketId,
+        authorName: input.actorName,
+        authorRole: "Approver",
+        body: payload.message,
+        createdAt: now,
+      });
+    }
+
+    await tx
+      .update(approvalOperations)
+      .set({ executedAt: now, executedBy: input.actorName })
+      .where(eq(approvalOperations.id, operation.id));
   });
 }

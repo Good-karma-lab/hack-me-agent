@@ -1,10 +1,11 @@
-import { and, eq, like } from "drizzle-orm";
+import { and, eq, isNull, like } from "drizzle-orm";
 import { db, ensureDatabase } from "@/lib/db";
 import {
   agentRunEvents,
   agentRuns,
   approvalRequests,
   inboxes,
+  organizationInvites,
   integrations,
   knowledgeDocuments,
   memberships,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "./password";
 import { slugify } from "@/lib/utils";
+import { createHash, randomBytes } from "node:crypto";
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
@@ -103,6 +105,173 @@ export async function createUserWithOrganization(input: {
   return {
     userId,
     organizationSlug: slug,
+  };
+}
+
+function hashInviteToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function createOrganizationInvite(input: {
+  organizationId: string;
+  email: string;
+  role: string;
+  invitedByUserId: string;
+}) {
+  await ensureDatabase();
+  const normalizedEmail = input.email.toLowerCase();
+
+  const existingMembership = await db
+    .select({ id: memberships.id })
+    .from(memberships)
+    .innerJoin(users, eq(memberships.userId, users.id))
+    .where(and(eq(memberships.organizationId, input.organizationId), eq(users.email, normalizedEmail)))
+    .limit(1);
+
+  if (existingMembership[0]) {
+    throw new Error("That user is already a member of this workspace.");
+  }
+
+  const existingInvite = await db
+    .select()
+    .from(organizationInvites)
+    .where(
+      and(
+        eq(organizationInvites.organizationId, input.organizationId),
+        eq(organizationInvites.email, normalizedEmail),
+        isNull(organizationInvites.acceptedAt),
+      ),
+    )
+    .limit(1);
+
+  if (existingInvite[0]) {
+    throw new Error("There is already an active invite for that email.");
+  }
+
+  const token = randomBytes(24).toString("hex");
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 7);
+
+  await db.insert(organizationInvites).values({
+    id: createId("inv"),
+    organizationId: input.organizationId,
+    email: normalizedEmail,
+    role: input.role,
+    invitedByUserId: input.invitedByUserId,
+    tokenHash: hashInviteToken(token),
+    expiresAt,
+    createdAt: now,
+  });
+
+  return token;
+}
+
+export async function listOrganizationMembersAndInvites(organizationId: string) {
+  await ensureDatabase();
+
+  const [memberRows, inviteRows] = await Promise.all([
+    db
+      .select({
+        membershipId: memberships.id,
+        email: users.email,
+        name: users.name,
+        role: memberships.role,
+      })
+      .from(memberships)
+      .innerJoin(users, eq(memberships.userId, users.id))
+      .where(eq(memberships.organizationId, organizationId)),
+    db
+      .select()
+      .from(organizationInvites)
+      .where(and(eq(organizationInvites.organizationId, organizationId), isNull(organizationInvites.acceptedAt))),
+  ]);
+
+  return {
+    members: memberRows,
+    invites: inviteRows,
+  };
+}
+
+export async function getInviteByToken(token: string) {
+  await ensureDatabase();
+
+  const [invite] = await db
+    .select({
+      id: organizationInvites.id,
+      email: organizationInvites.email,
+      role: organizationInvites.role,
+      expiresAt: organizationInvites.expiresAt,
+      acceptedAt: organizationInvites.acceptedAt,
+      organizationId: organizations.id,
+      organizationName: organizations.name,
+      organizationSlug: organizations.slug,
+    })
+    .from(organizationInvites)
+    .innerJoin(organizations, eq(organizationInvites.organizationId, organizations.id))
+    .where(eq(organizationInvites.tokenHash, hashInviteToken(token)))
+    .limit(1);
+
+  return invite ?? null;
+}
+
+export async function acceptInviteWithNewUser(input: {
+  token: string;
+  name: string;
+  password: string;
+}) {
+  await ensureDatabase();
+
+  const invite = await getInviteByToken(input.token);
+
+  if (!invite) {
+    throw new Error("Invite not found.");
+  }
+
+  if (invite.acceptedAt) {
+    throw new Error("Invite has already been accepted.");
+  }
+
+  if (invite.expiresAt.getTime() < Date.now()) {
+    throw new Error("Invite has expired.");
+  }
+
+  const existingUser = await getUserByEmail(invite.email);
+  if (existingUser) {
+    throw new Error("An account with that invited email already exists. Sign in first to join this workspace.");
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const userId = createId("usr");
+  const membershipId = createId("mem");
+  const acceptedAt = new Date();
+
+  await db.transaction(async (tx) => {
+    await tx.insert(users).values({
+      id: userId,
+      email: invite.email,
+      name: input.name,
+      passwordHash,
+      createdAt: acceptedAt,
+      updatedAt: acceptedAt,
+    });
+
+    await tx.insert(memberships).values({
+      id: membershipId,
+      userId,
+      organizationId: invite.organizationId,
+      role: invite.role,
+      createdAt: acceptedAt,
+    });
+
+    await tx
+      .update(organizationInvites)
+      .set({ acceptedAt })
+      .where(eq(organizationInvites.id, invite.id));
+  });
+
+  return {
+    userId,
+    organizationSlug: invite.organizationSlug,
   };
 }
 

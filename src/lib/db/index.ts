@@ -71,6 +71,21 @@ async function initializeDatabase() {
         )
       `,
       `
+        CREATE TABLE IF NOT EXISTS organization_invites (
+          id TEXT PRIMARY KEY NOT NULL,
+          organization_id TEXT NOT NULL,
+          email TEXT NOT NULL,
+          role TEXT NOT NULL,
+          invited_by_user_id TEXT NOT NULL,
+          token_hash TEXT NOT NULL UNIQUE,
+          accepted_at INTEGER,
+          expires_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY(organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY(invited_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `,
+      `
         CREATE TABLE IF NOT EXISTS inboxes (
           id TEXT PRIMARY KEY NOT NULL,
           organization_id TEXT NOT NULL,
@@ -140,6 +155,18 @@ async function initializeDatabase() {
         )
       `,
       `
+        CREATE TABLE IF NOT EXISTS approval_operations (
+          id TEXT PRIMARY KEY NOT NULL,
+          approval_request_id TEXT NOT NULL,
+          operation_type TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          executed_at INTEGER,
+          executed_by TEXT,
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY(approval_request_id) REFERENCES approval_requests(id) ON DELETE CASCADE
+        )
+      `,
+      `
         CREATE TABLE IF NOT EXISTS integrations (
           id TEXT PRIMARY KEY NOT NULL,
           organization_id TEXT NOT NULL,
@@ -179,6 +206,7 @@ async function initializeDatabase() {
       `CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users(email)`,
       `CREATE UNIQUE INDEX IF NOT EXISTS organizations_slug_idx ON organizations(slug)`,
       `CREATE UNIQUE INDEX IF NOT EXISTS memberships_user_org_idx ON memberships(user_id, organization_id)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS organization_invites_token_idx ON organization_invites(token_hash)`,
     ].map((statement) => ({ sql: statement })),
     "write",
   );

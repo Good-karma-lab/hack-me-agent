@@ -71,6 +71,9 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
           description={`${ticket.company} • ${ticket.requesterName} • ${ticket.sentiment}`}
           action={
             <div className="flex items-center gap-3">
+              <div data-testid="ticket-status" className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200">
+                {ticket.status}
+              </div>
               <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-200">
                 <CheckCircle2 className="h-4 w-4" />
                 {runs[0] ? "AI run available" : "No run yet"}

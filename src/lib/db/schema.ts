@@ -47,6 +47,22 @@ export const sessions = sqliteTable("sessions", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const organizationInvites = sqliteTable(
+  "organization_invites",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    invitedByUserId: text("invited_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [uniqueIndex("organization_invites_token_idx").on(table.tokenHash)],
+);
+
 export const inboxes = sqliteTable("inboxes", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
@@ -102,6 +118,16 @@ export const approvalRequests = sqliteTable("approval_requests", {
   createdBy: text("created_by").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const approvalOperations = sqliteTable("approval_operations", {
+  id: text("id").primaryKey(),
+  approvalRequestId: text("approval_request_id").notNull().references(() => approvalRequests.id, { onDelete: "cascade" }),
+  operationType: text("operation_type").notNull(),
+  payload: text("payload").notNull(),
+  executedAt: integer("executed_at", { mode: "timestamp_ms" }),
+  executedBy: text("executed_by"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 export const integrations = sqliteTable("integrations", {
@@ -162,6 +188,17 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
 }));
 
+export const organizationInvitesRelations = relations(organizationInvites, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [organizationInvites.organizationId],
+    references: [organizations.id],
+  }),
+  invitedBy: one(users, {
+    fields: [organizationInvites.invitedByUserId],
+    references: [users.id],
+  }),
+}));
+
 export const inboxesRelations = relations(inboxes, ({ one }) => ({
   organization: one(organizations, {
     fields: [inboxes.organizationId],
@@ -174,11 +211,13 @@ export const schema = {
   organizations,
   memberships,
   sessions,
+  organizationInvites,
   inboxes,
   tickets,
   ticketMessages,
   knowledgeDocuments,
   approvalRequests,
+  approvalOperations,
   integrations,
   agentRuns,
   agentRunEvents,

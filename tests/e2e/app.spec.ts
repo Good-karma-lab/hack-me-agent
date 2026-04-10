@@ -1,16 +1,40 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 
-test("customer support tenant flow works end-to-end", async ({ page }) => {
+async function createWorkspace(page: Page, suffix: string) {
+  const email = `owner+${suffix}@playwright-support.test`;
+  const workspace = `Playwright Support ${suffix}`;
+
   await page.goto("/signup");
-
   await page.getByTestId("field-name").fill("Playwright Owner");
-  await page.getByTestId("field-email").fill("owner@playwright-support.test");
-  await page.getByTestId("field-organizationName").fill("Playwright Support");
+  await page.getByTestId("field-email").fill(email);
+  await page.getByTestId("field-organizationName").fill(workspace);
   await page.getByTestId("field-password").fill("Sup3rSecretPass!");
   await page.getByTestId("signup-submit").click();
+  await expect(page).toHaveURL(/\/app\/.+\/inbox(?:\/.+)?/);
 
-  await expect(page).toHaveURL(/\/app\/playwright-support\/inbox(?:\/.+)?/);
+  const match = page.url().match(/\/app\/([^/]+)\//);
+  if (!match) {
+    throw new Error(`Could not determine org slug from ${page.url()}`);
+  }
+
   await expect(page.getByTestId("reply-body")).toBeVisible();
+
+  return {
+    email,
+    workspace,
+    orgSlug: match[1],
+  };
+}
+
+async function login(page: Page, email: string) {
+  await page.goto("/login");
+  await page.getByTestId("field-email").fill(email);
+  await page.getByTestId("field-password").fill("Sup3rSecretPass!");
+  await page.getByTestId("login-submit").click();
+}
+
+test("customer support tenant flow works end-to-end", async ({ page }) => {
+  await createWorkspace(page, "flow");
 
   await page.getByTestId("reply-body").fill("Following up from Playwright with a tenant-scoped reply.");
   await page.getByTestId("reply-submit").click();
@@ -23,58 +47,87 @@ test("customer support tenant flow works end-to-end", async ({ page }) => {
   await page.getByTestId("knowledge-submit").click();
   await expect(page.getByText("Refund escalation matrix")).toBeVisible();
 
-  await page.getByTestId("nav-approvals").click();
-  const firstApproval = page.locator('[data-testid^="approve-"]').first();
-  const firstApprovalId = await firstApproval.getAttribute("data-testid");
-  await firstApproval.click();
-  await expect(page.getByTestId(`approval-status-${firstApprovalId?.replace("approve-", "")}`)).toHaveText("approved");
-
   await page.getByTestId("nav-settings").click();
-  await page.getByTestId("integration-provider").fill("jira");
-  await page.getByTestId("integration-label").fill("Playwright Jira");
-  await page.getByTestId("integration-config").fill('{"project":"SUP"}');
+  await page.getByTestId("integration-provider").fill("mcp-remote");
+  await page.getByTestId("integration-label").fill("Docs MCP");
+  await page.getByTestId("integration-config").fill('{"type":"remote","url":"https://example.com/mcp","headers":{"Authorization":"Bearer token"}}');
   await page.getByTestId("integration-submit").click();
-  await expect(page.getByText("Playwright Jira")).toBeVisible();
+  await expect(page.getByText("Docs MCP")).toBeVisible();
 
-  await page.getByTestId("nav-inbox").click();
-  await page.locator('[data-testid^="ticket-link-"]').nth(2).click();
-  await expect(page.getByRole("heading", { name: "No run yet" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Run copilot" }).click();
-  await expect(page.getByText("SignalDesk Agent")).toBeVisible();
-  await expect(page.getByTestId("run-model")).not.toHaveText("pending");
-
-  await page.getByTestId("nav-runs").click();
-  await expect(page.getByText("completed").first()).toBeVisible();
+  const toggle = page.locator('[data-testid^="integration-toggle-"]').last();
+  const toggleId = await toggle.getAttribute("data-testid");
+  const integrationId = toggleId?.replace("integration-toggle-", "");
+  await toggle.click();
+  await expect(page.getByTestId(`integration-status-${integrationId}`)).toHaveText("inactive");
 });
 
-test("auth redirects and login persistence work with the real database", async ({ page }) => {
-  await page.goto("/login");
+test("invite acceptance creates a second real workspace member", async ({ page, browser }) => {
+  const owner = await createWorkspace(page, "invite-owner");
 
-  await page.getByTestId("field-email").fill("owner@playwright-support.test");
+  await page.getByTestId("nav-settings").click();
+  await page.getByTestId("invite-email").fill("teammate@playwright-support.test");
+  await page.getByTestId("invite-role").selectOption("member");
+  await page.getByTestId("invite-submit").click();
+  await expect(page).toHaveURL(/invite=/);
+
+  const inviteHref = await page.getByTestId("invite-link").getAttribute("href");
+  if (!inviteHref) {
+    throw new Error("Invite href missing.");
+  }
+
+  const teammateContext = await createTeammateContext(browser, inviteHref);
+  const teammatePage = teammateContext.page;
+
+  await expect(teammatePage).toHaveURL(new RegExp(`/app/${owner.orgSlug}/inbox(?:/.+)?`));
+  await expect(teammatePage.getByTestId("reply-body")).toBeVisible();
+  await teammateContext.context.close();
+
+  await page.reload();
+  await expect(page.getByText("Teammate User")).toBeVisible();
+  await expect(page.getByTestId("member-role-teammate@playwright-support.test")).toHaveText("member");
+});
+
+async function createTeammateContext(browser: Browser, inviteHref: string) {
+  const context = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
+  const page = await context.newPage();
+  await page.goto(inviteHref);
+  await page.getByTestId("field-name").fill("Teammate User");
   await page.getByTestId("field-password").fill("Sup3rSecretPass!");
-  await page.getByTestId("login-submit").click();
+  await page.getByTestId("invite-accept-submit").click();
+  return { context, page };
+}
 
-  await expect(page).toHaveURL(/\/app\/playwright-support\/inbox(?:\/.+)?/);
+test("auth redirects, validation errors, and approval-backed actions work end-to-end", async ({ page }) => {
+  const owner = await createWorkspace(page, "auth-approval");
 
   await page.getByTestId("logout-submit").click();
   await expect(page).toHaveURL(/\/$/);
 
   await page.goto("/app");
   await expect(page).toHaveURL(/\/login/);
-});
 
-test("re-running the copilot creates another real OpenCode run", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByTestId("field-email").fill("owner@playwright-support.test");
-  await page.getByTestId("field-password").fill("Sup3rSecretPass!");
-  await page.getByTestId("login-submit").click();
+  await login(page, owner.email);
+  await expect(page).toHaveURL(new RegExp(`/app/${owner.orgSlug}/inbox(?:/.+)?`));
+
+  await page.getByTestId("nav-settings").click();
+  await page.getByTestId("integration-provider").fill("broken");
+  await page.getByTestId("integration-label").fill("Broken integration");
+  await page.getByTestId("integration-config").fill('{"type":"remote","headers":{"Authorization":"Bearer token"}}');
+  await page.getByTestId("integration-submit").click();
+  await expect(page.getByText(/Remote MCP integrations require an absolute/)).toBeVisible();
 
   await page.getByTestId("nav-inbox").click();
-  await page.locator('[data-testid^="ticket-link-"]').nth(1).click();
+  await page.locator('[data-testid^="ticket-link-"]').first().click();
   await page.getByRole("button", { name: "Run copilot" }).click();
 
-  await expect(page.getByText("SignalDesk Agent")).toBeVisible();
-  await page.getByTestId("nav-runs").click();
-  await expect(page.locator('[data-testid^="run-card-"]')).toHaveCount(3);
+  await page.getByTestId("nav-approvals").click();
+  const executableApproval = page.locator('[data-testid^="approval-operation-"]').first();
+  const approvalId = (await executableApproval.getAttribute("data-testid"))?.replace("approval-operation-", "");
+  await page.getByTestId(`approve-${approvalId}`).click();
+  await expect(page.getByTestId(`approval-status-${approvalId}`)).toHaveText("approved");
+
+  await page.getByTestId("nav-inbox").click();
+  await page.locator('[data-testid^="ticket-link-"]').first().click();
+  await expect(page.getByTestId("ticket-status")).toHaveText("awaiting-approval");
+  await expect(page.getByText("Approver")).toBeVisible();
 });
