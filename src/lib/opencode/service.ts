@@ -187,11 +187,8 @@ async function promptSession(
 }
 
 export async function runTicketCopilot(input: RunTicketCopilotInput) {
-  const [ticketDetail, documents, integrations, approvals] = await Promise.all([
+  const [ticketDetail] = await Promise.all([
     getTicketDetail(input.organizationId, input.ticketId),
-    listKnowledgeDocuments(input.organizationId),
-    listIntegrations(input.organizationId),
-    listApprovalRequests(input.organizationId),
   ]);
 
   if (!ticketDetail) {
@@ -204,7 +201,38 @@ export async function runTicketCopilot(input: RunTicketCopilotInput) {
     ticketId: input.ticketId,
     provider: parsedModel?.providerID ?? "pending",
     model: parsedModel?.modelID ?? "pending",
+    summary: "Queued AI investigation for this ticket.",
+  });
+
+  void processTicketCopilot({
+    ...input,
+    runId,
+  });
+
+  return runId;
+}
+
+async function processTicketCopilot(input: RunTicketCopilotInput & { runId: string }) {
+  const [ticketDetail, documents, integrations, approvals] = await Promise.all([
+    getTicketDetail(input.organizationId, input.ticketId),
+    listKnowledgeDocuments(input.organizationId),
+    listIntegrations(input.organizationId),
+    listApprovalRequests(input.organizationId),
+  ]);
+
+  if (!ticketDetail) {
+    throw new Error("Ticket not found.");
+  }
+
+  const parsedModel = parseModel(OPENCODE_MODEL);
+  const runId = input.runId;
+
+  await updateAgentRunRecord({
+    runId,
+    status: "running",
     summary: "Starting OpenCode support analysis.",
+    provider: parsedModel?.providerID ?? "pending",
+    model: parsedModel?.modelID ?? "pending",
   });
 
   try {

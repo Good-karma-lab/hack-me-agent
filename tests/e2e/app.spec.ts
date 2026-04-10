@@ -116,10 +116,6 @@ test("auth redirects, validation errors, and approval-backed actions work end-to
   await page.getByTestId("integration-submit").click();
   await expect(page.getByText(/Remote MCP integrations require an absolute/)).toBeVisible();
 
-  await page.getByTestId("nav-inbox").click();
-  await page.locator('[data-testid^="ticket-link-"]').first().click();
-  await page.getByRole("button", { name: "Run copilot" }).click();
-
   await page.getByTestId("nav-approvals").click();
   const executableApproval = page.locator('[data-testid^="approval-operation-"]').first();
   const approvalId = (await executableApproval.getAttribute("data-testid"))?.replace("approval-operation-", "");

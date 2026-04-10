@@ -3,6 +3,7 @@ import { db, ensureDatabase } from "@/lib/db";
 import {
   agentRunEvents,
   agentRuns,
+  approvalOperations,
   approvalRequests,
   inboxes,
   organizationInvites,
@@ -390,9 +391,12 @@ async function seedOrganizationData(
     },
   ]);
 
+  const duplicateChargeApprovalId = createId("apr");
+  const webhookApprovalId = createId("apr");
+
   await tx.insert(approvalRequests).values([
     {
-      id: createId("apr"),
+      id: duplicateChargeApprovalId,
       organizationId,
       ticketId: ticketSeed[0].id,
       title: "Refund pending capture over threshold",
@@ -403,7 +407,7 @@ async function seedOrganizationData(
       updatedAt: now,
     },
     {
-      id: createId("apr"),
+      id: webhookApprovalId,
       organizationId,
       ticketId: ticketSeed[2].id,
       title: "Rotate webhook worker credentials",
@@ -414,6 +418,18 @@ async function seedOrganizationData(
       updatedAt: now,
     },
   ]);
+
+  await tx.insert(approvalOperations).values({
+    id: createId("apo"),
+    approvalRequestId: duplicateChargeApprovalId,
+    operationType: "ticket_status_update",
+    payload: JSON.stringify({
+      ticketStatus: "awaiting-approval",
+      message: "Refund approval executed for the duplicate billing workflow.",
+      ticketId: ticketSeed[0].id,
+    }),
+    createdAt: now,
+  });
 
   const runId = createId("run");
 

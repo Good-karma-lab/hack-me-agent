@@ -173,5 +173,5 @@ export async function runTicketCopilotAction(formData: FormData) {
   revalidatePath(`/app/${orgSlug}/inbox/${ticketId}`);
   revalidatePath(`/app/${orgSlug}/runs`);
   revalidatePath(`/app/${orgSlug}/approvals`);
-  redirect(`/app/${orgSlug}/inbox/${ticketId}`);
+  redirect(`/app/${orgSlug}/inbox/${ticketId}?copilot=started`);
 }
